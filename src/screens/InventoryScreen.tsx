@@ -594,6 +594,11 @@ export default function InventoryScreen() {
           numColumns={5}
           contentContainerStyle={styles.grid}
           columnWrapperStyle={styles.gridRow}
+          // Performance: only mount nearby cells, drop the rest
+          windowSize={5}
+          maxToRenderPerBatch={10}
+          initialNumToRender={20}
+          removeClippedSubviews={true}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View style={styles.emptyWrap}>
