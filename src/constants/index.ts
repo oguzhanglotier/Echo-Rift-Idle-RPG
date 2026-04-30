@@ -48,6 +48,34 @@ export const MAX_MAILBOX = 500
 // LEADERBOARD
 export const LEADERBOARD_TOP = 100
 
+// =============================================
+// ECHO REBIRTH (PRESTIGE) — mirror of backend helpers
+// Backend: get_prestige_threshold / _stat_bonus_pct / _xp_mult / _regen_seconds / _max_friends
+// =============================================
+export const PRESTIGE = {
+  // T+1 threshold = (current_tier + 1) × 10
+  threshold: (tier: number): number => (tier + 1) * 10,
+
+  // Stat bonus: +5% per tier (linear), applied to ATK/HP/DEF/DEX/CRIT
+  statBonusPct: (tier: number): number => tier * 5,
+
+  // XP multiplier: +0.20 per tier (T0=1.00, T1=1.20, T10=3.00)
+  xpMult: (tier: number): number => 1.0 + tier * 0.20,
+
+  // Stamina regen seconds: 1800 base, -30s per tier, floor 600 (10 min)
+  regenSeconds: (tier: number): number => Math.max(1800 - tier * 30, 600),
+
+  // Max friends: 15 base, +1 per tier, cap 50
+  maxFriends: (tier: number): number => Math.min(15 + tier, 50),
+
+  // Regen formatted as minutes (e.g. "30 min", "27.5 min")
+  regenMinutes: (tier: number): string => {
+    const s = Math.max(1800 - tier * 30, 600)
+    const m = s / 60
+    return m % 1 === 0 ? `${m} min` : `${m.toFixed(1)} min`
+  },
+} as const
+
 // COLORS
 export const COLORS = {
   // Background

@@ -113,6 +113,8 @@ export interface Player {
   xp: number
   xp_to_next_level: number
   prestige_xp: number
+  prestige_tier: number
+  last_rebirth_at: string | null
   gold: number
   rc_balance: number
   rc_total_earned: number
@@ -138,6 +140,29 @@ export interface Player {
   consecutive_login_days: number
   last_login_date: string | null
   created_at: string
+}
+
+// =============================================
+// ECHO REBIRTH (PRESTIGE)
+// =============================================
+export interface EchoRebirthResult {
+  success: boolean
+  error?: string
+  current_level?: number
+  required_level?: number
+  next_tier?: number
+  // success payload
+  old_tier?: number
+  new_tier?: number
+  old_level?: number
+  prestige_xp_gained?: number
+  prestige_xp_total?: number
+  items_halved?: number
+  rewards?: { rc: number; scrap: number }
+  new_stat_bonus_pct?: number
+  new_xp_mult?: number
+  new_regen_seconds?: number
+  new_max_friends?: number
 }
 
 export interface PlayerStats {

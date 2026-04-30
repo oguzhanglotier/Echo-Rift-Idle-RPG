@@ -5,7 +5,7 @@
 import { useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useGameStore } from '../store/gameStore'
-import { PlayerState, DungeonBattleResult, ArenaBattleResult } from '../types'
+import { PlayerState, DungeonBattleResult, ArenaBattleResult, EchoRebirthResult } from '../types'
 import { QuestDurationKey } from '../types'
 import {
   scheduleQuestNotification,
@@ -704,6 +704,30 @@ export const useGame = () => {
     }, []
   )
 
+  // =============================================
+  // ECHO REBIRTH (PRESTIGE)
+  // =============================================
+  const performEchoRebirth = useCallback(
+    async (playerId: string): Promise<EchoRebirthResult | null> => {
+      try {
+        const { data, error } = await supabase.rpc('perform_echo_rebirth', {
+          p_player_id: playerId,
+        })
+        if (error) throw error
+        // On success, refetch player state so UI reflects new tier + reset stats
+        if (data?.success) {
+          await fetchPlayerState(playerId)
+        }
+        return data as EchoRebirthResult
+      } catch (err: any) {
+        setError(err.message)
+        console.error('performEchoRebirth error:', err)
+        return null
+      }
+    },
+    [fetchPlayerState]
+  )
+
   return {
     fetchPlayerState,
     startQuest,
@@ -742,5 +766,6 @@ export const useGame = () => {
     sendEnergyGift,
     getReferralSummary,
     redeemReferralCode,
+    performEchoRebirth,
   }
 }

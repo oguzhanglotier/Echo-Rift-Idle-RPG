@@ -13,8 +13,9 @@ import { useFocusEffect } from '@react-navigation/native'
 import { supabase } from '../lib/supabase'
 import { useGameStore } from '../store/gameStore'
 import { useGame } from '../hooks/useGame'
-import { COLORS, CLASS_INFO } from '../constants'
+import { COLORS, CLASS_INFO, PRESTIGE } from '../constants'
 import { ThemedAlert } from '../components/ThemedAlert'
+import { RebirthModal } from '../components/RebirthModal'
 
 const { width } = Dimensions.get('window')
 const CORNER = 10
@@ -67,14 +68,15 @@ function XpBar({ current, max }: { current: number; max: number }) {
 // ─── ANA EKRAN ───────────────────────────────────────────────────────────────
 export default function ProfileScreen({ navigation }: any) {
   const { playerState } = useGameStore()
-  const { fetchPlayerState } = useGame()
+  const { fetchPlayerState, performEchoRebirth } = useGame()
 
-  const [userId,          setUserId]          = useState<string | null>(null)
-  const [refreshing,      setRefreshing]      = useState(false)
-  const [showPassModal,   setShowPassModal]   = useState(false)
-  const [showRenameModal, setShowRenameModal] = useState(false)
-  const [newUsername,     setNewUsername]     = useState('')
-  const [renameLoading,   setRenameLoading]   = useState(false)
+  const [userId,            setUserId]            = useState<string | null>(null)
+  const [refreshing,        setRefreshing]        = useState(false)
+  const [showPassModal,     setShowPassModal]     = useState(false)
+  const [showRenameModal,   setShowRenameModal]   = useState(false)
+  const [showRebirthModal,  setShowRebirthModal]  = useState(false)
+  const [newUsername,       setNewUsername]       = useState('')
+  const [renameLoading,     setRenameLoading]     = useState(false)
 
   useFocusEffect(useCallback(() => { loadData() }, []))
 
@@ -229,6 +231,55 @@ export default function ProfileScreen({ navigation }: any) {
             <XpBar current={player.xp} max={player.xp_to_next_level} />
           </View>
         </HoloCard>
+
+        {/* ══ BÖLGE 1.5: ECHO REBIRTH (PRESTIGE) ══ */}
+        {(() => {
+          const tier = player.prestige_tier ?? 0
+          const nextThreshold = PRESTIGE.threshold(tier)
+          const canRebirth = player.level >= nextThreshold
+          const statPct = PRESTIGE.statBonusPct(tier)
+          const xpMult = PRESTIGE.xpMult(tier)
+          return (
+            <HoloCard color={COLORS.gold as string} style={{ marginBottom: 12 }}>
+              <View style={styles.prestigeHead}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.sectionTitle, { color: COLORS.gold as string }]}>
+                    🌌 ECHO REBIRTH
+                  </Text>
+                  <Text style={styles.prestigeSub}>
+                    TIER {tier} · +{statPct}% STAT · ×{xpMult.toFixed(2)} XP
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={[
+                    styles.rebirthBtn,
+                    canRebirth && { borderColor: COLORS.neonGreen as string, backgroundColor: 'rgba(0,255,136,0.12)' },
+                  ]}
+                  onPress={() => setShowRebirthModal(true)}
+                >
+                  <Text style={[
+                    styles.rebirthBtnText,
+                    canRebirth && { color: COLORS.neonGreen as string },
+                  ]}>
+                    {canRebirth ? `REBIRTH → T${tier + 1}` : `LV ${nextThreshold} TO UNLOCK`}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.divider} />
+              <View style={styles.statsGrid}>
+                <View style={styles.statsCol}>
+                  <StatRow label="LIFETIME XP"  value={(player.prestige_xp ?? 0).toLocaleString()} color={COLORS.gold as string} />
+                  <StatRow label="REGEN/⚡"     value={PRESTIGE.regenMinutes(tier)} />
+                </View>
+                <View style={styles.statsDivider} />
+                <View style={styles.statsCol}>
+                  <StatRow label="MAX FRIENDS"  value={`${PRESTIGE.maxFriends(tier)}`} />
+                  <StatRow label="NEXT TIER"    value={`LV ${nextThreshold}`} color={canRebirth ? COLORS.neonGreen as string : COLORS.textMuted as string} />
+                </View>
+              </View>
+            </HoloCard>
+          )
+        })()}
 
         {/* ══ BÖLGE 2: CLASS BONUSES ══ */}
         {!!(classInfo) && (
@@ -433,6 +484,18 @@ export default function ProfileScreen({ navigation }: any) {
         </View>
       </Modal>
 
+      {/* ══ ECHO REBIRTH MODAL ══ */}
+      <RebirthModal
+        visible={showRebirthModal}
+        currentTier={player.prestige_tier ?? 0}
+        currentLevel={player.level}
+        onClose={() => setShowRebirthModal(false)}
+        onConfirm={async () => {
+          if (!userId) return null
+          return await performEchoRebirth(userId)
+        }}
+      />
+
     </View>
   )
 }
@@ -497,6 +560,22 @@ const styles = StyleSheet.create({
 
   twoCol:   { flexDirection: 'row', gap: 12, marginBottom: 12 },
   halfCard: { flex: 1, marginBottom: 0 },
+
+  // Echo Rebirth (prestige)
+  prestigeHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  prestigeSub:  {
+    fontSize: 10, color: COLORS.textMuted as string, letterSpacing: 1.5,
+    marginTop: 2, fontWeight: '700',
+  },
+  rebirthBtn: {
+    borderWidth: 1, borderColor: COLORS.textMuted as string,
+    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 4,
+    backgroundColor: 'rgba(255,255,255,0.02)',
+  },
+  rebirthBtnText: {
+    fontSize: 9, fontWeight: '900', letterSpacing: 1.5,
+    color: COLORS.textMuted as string,
+  },
 
   passRow:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   passLarge:     { fontSize: 16, fontWeight: '900', letterSpacing: 2, marginBottom: 4 },
