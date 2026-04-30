@@ -191,6 +191,7 @@ export interface Item {
   power_score: number
   is_equipped: boolean
   source: string
+  tier: number
   affixes: ItemAffix[]
 }
 

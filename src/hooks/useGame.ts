@@ -460,7 +460,7 @@ export const useGame = () => {
         const { data, error } = await supabase
           .from('items')
           .select(`
-            id, item_type, rarity, level,
+            id, item_type, rarity, level, tier, enhancement_level,
             base_attack, power_score, is_equipped, is_locked, source,
             item_affixes (affix_type, value)
           `)

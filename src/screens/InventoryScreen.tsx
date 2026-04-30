@@ -128,7 +128,7 @@ function EquipSlot({ slotType, item, onPress, classType }: {
               <Text style={styles.slotEnhText}>+{item.enhancement_level}</Text>
             </View>
           )}
-          <Text style={styles.slotLevel}>L{item.level}</Text>
+          <Text style={styles.slotLevel}>{item.tier > 0 ? `T${item.tier} ` : ''}L{item.level}</Text>
         </>
       ) : (
         <>
@@ -625,7 +625,7 @@ export default function InventoryScreen() {
                       }
                       return <Text style={styles.itemIcon}>{SLOT_ICONS[item.item_type] || '?'}</Text>
                     })()}
-                    <Text style={styles.itemLevel}>L{item.level}</Text>
+                    <Text style={styles.itemLevel}>{item.tier > 0 ? `T${item.tier} ` : ''}L{item.level}</Text>
                   </View>
                 </RarityAura>
               </TouchableOpacity>
@@ -725,7 +725,7 @@ export default function InventoryScreen() {
                           <Text style={styles.hLockText}>🔒</Text>
                         </View>
                       )}
-                      <Text style={styles.hLvl}>L{item.level}</Text>
+                      <Text style={styles.hLvl}>{item.tier > 0 ? `T${item.tier} ` : ''}L{item.level}</Text>
                     </View>
                     </RarityAura>
 
