@@ -128,15 +128,18 @@ function ShimmerRing({
     inputRange: [0, 1],
     outputRange: reverse ? ['360deg', '0deg'] : ['0deg', '360deg'],
   })
-  const ringSize = size + 6
+  // Ring sits ~15% smaller than the slot, centered → looks embedded inside
+  const ringSize = Math.round(size * 0.85)
+  const offset   = (size - ringSize) / 2
+  const ringRadius = Math.max(2, Math.round(borderRadius * (ringSize / size)))
   return (
     <Animated.View
       pointerEvents="none"
       style={{
         position: 'absolute',
-        top: -3, left: -3,
+        top: offset, left: offset,
         width: ringSize, height: ringSize,
-        borderRadius: borderRadius + 3,
+        borderRadius: ringRadius,
         borderWidth: 1,
         borderColor: color + '50',
         transform: [{ rotate: spin }],
