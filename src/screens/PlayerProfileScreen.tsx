@@ -90,10 +90,10 @@ function ProfileSlot({ slotType, item, onPress, classType }: {
                 <Text style={styles.slotEnhText}>+{item.enhancement_level}</Text>
               </View>
             )}
-            <Text style={styles.slotLevel}>
-              {item.tier > 0 ? <Text style={{ color: rc }}>T{item.tier} </Text> : null}
-              L{item.level}
-            </Text>
+            {item.tier > 0 && (
+              <Text style={[styles.slotTierBadge, { color: rc }]}>T{item.tier}</Text>
+            )}
+            <Text style={styles.slotLevel}>L{item.level}</Text>
           </>
         ) : (
           <>
@@ -558,6 +558,11 @@ const styles = StyleSheet.create({
     position: 'absolute', bottom: 3, right: 4,
     fontSize: 9, color: '#fff', fontWeight: '800', zIndex: 2,
     textShadowColor: 'rgba(0,0,0,0.9)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3,
+  },
+  slotTierBadge: {
+    position: 'absolute', bottom: 3, left: 4,
+    fontSize: 9, fontWeight: '900', letterSpacing: 0.3, zIndex: 2,
+    textShadowColor: 'rgba(0,0,0,0.95)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3,
   },
 
   statStrip: {
