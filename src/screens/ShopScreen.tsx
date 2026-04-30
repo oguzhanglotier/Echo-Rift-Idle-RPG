@@ -355,7 +355,7 @@ function ShopItemCard({ item, onPress }: { item: ShopItem; onPress: () => void }
       ]}
     >
       {/* Bundle badge */}
-      {item.bundle_value && (
+      {!!item.bundle_value && (
         <View style={[styles.itemBadge, { backgroundColor: tierColor }]}>
           <Text style={styles.itemBadgeText}>{item.bundle_value}</Text>
         </View>
@@ -547,7 +547,7 @@ function BuyModal({
               <Text style={styles.modalTier}>{item.rarity_tier.toUpperCase()}</Text>
 
               {/* Lore */}
-              {item.lore && (
+              {!!item.lore && (
                 <View style={styles.modalLoreBox}>
                   <Text style={styles.modalLoreSpeaker}>— Quartermaster Nyx</Text>
                   <Text style={styles.modalLore}>"{item.lore}"</Text>
@@ -627,7 +627,7 @@ function BuyModal({
               <Text style={styles.modalSparkle}>✨</Text>
               <Text style={[styles.modalSuccessTitle, { color: tierColor }]}>PURCHASED</Text>
               <Text style={styles.modalSuccessReward}>{formatReward(item)}</Text>
-              {item.lore && (
+              {!!item.lore && (
                 <Text style={styles.modalSuccessQuote}>"Spend it well, commander." — Nyx</Text>
               )}
               <TouchableOpacity

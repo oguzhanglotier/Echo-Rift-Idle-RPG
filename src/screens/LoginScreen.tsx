@@ -14,6 +14,7 @@ import { RootStackParamList } from '../navigation/AppNavigator'
 import * as Linking from 'expo-linking'
 import * as WebBrowser from 'expo-web-browser'
 import { LinearGradient } from 'expo-linear-gradient'
+import { ThemedAlert } from '../components/ThemedAlert'
 
 const { width, height } = Dimensions.get('window')
 
@@ -93,7 +94,7 @@ function HoloButton({
             {label}
           </Text>
 
-          {primary && (
+          {!!(primary) && (
             <Animated.View style={[holoStyles.bottomBar, { opacity: glowAnim, backgroundColor: COLORS.cyan }]} />
           )}
         </View>
@@ -156,51 +157,103 @@ export default function LoginScreen({ navigation }: Props) {
   const handleGoogleLogin = async () => {
     try {
       setLoading(true)
+
+      // Ortama göre otomatik doğru URL üretir
+      // Expo Go local  → exp://192.168.1.x:8081/--/login-callback
+      // Expo Go tunnel → exp+echo-rift://login-callback  
+      // Dev build      → echo-rift://login-callback
       const redirectUrl = Linking.createURL('login-callback')
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: redirectUrl, skipBrowserRedirect: true },
+        options: {
+          redirectTo: redirectUrl,
+          skipBrowserRedirect: true,
+        },
       })
       if (error) throw error
-      if (data?.url) {
-        const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl)
-        if (result.type === 'success' && result.url) {
-          const code = new URL(result.url).searchParams.get('code') || ''
-          const { data: s, error: e } = await supabase.auth.exchangeCodeForSession(code)
-          if (e) throw e
-          if (s.user) {
-            const { data: player } = await supabase.from('players').select('class_type').eq('id', s.user.id).single()
+      if (!data?.url) throw new Error('No auth URL returned')
+
+      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl)
+
+      if (result.type === 'success' && result.url) {
+        // ✅ code veya token her ikisini de handle et
+        const url = new URL(result.url)
+        const code = url.searchParams.get('code')
+
+        if (code) {
+          // PKCE flow — code exchange
+          const { data: session, error: sessionError } = await supabase.auth.exchangeCodeForSession(code)
+          if (sessionError) throw sessionError
+          if (session?.user) {
+            const { data: player } = await supabase
+              .from('players').select('class_type').eq('id', session.user.id).single()
+            navigation.replace(player?.class_type ? 'Main' : 'ClassSelect')
+          }
+        } else {
+          // ✅ Fallback — session zaten set edilmiş olabilir
+          await new Promise(r => setTimeout(r, 500))
+          const { data: { session } } = await supabase.auth.getSession()
+          if (session?.user) {
+            const { data: player } = await supabase
+              .from('players').select('class_type').eq('id', session.user.id).single()
             navigation.replace(player?.class_type ? 'Main' : 'ClassSelect')
           }
         }
       }
-    } catch (err: any) { Alert.alert('Error', err.message) }
-    finally { setLoading(false) }
+      // result.type === 'cancel' → kullanıcı kapattı, sessiz geç
+    } catch (err: any) {
+      ThemedAlert.alert('Google Login Failed', err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleAppleLogin = async () => {
     try {
       setLoading(true)
+
       const redirectUrl = Linking.createURL('login-callback')
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'apple',
-        options: { redirectTo: redirectUrl, skipBrowserRedirect: true },
+        options: {
+          redirectTo: redirectUrl,
+          skipBrowserRedirect: true,
+        },
       })
       if (error) throw error
-      if (data?.url) {
-        const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl)
-        if (result.type === 'success' && result.url) {
-          const code = new URL(result.url).searchParams.get('code') || ''
-          const { data: s, error: e } = await supabase.auth.exchangeCodeForSession(code)
-          if (e) throw e
-          if (s.user) {
-            const { data: player } = await supabase.from('players').select('class_type').eq('id', s.user.id).single()
+      if (!data?.url) throw new Error('No auth URL returned')
+
+      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl)
+
+      if (result.type === 'success' && result.url) {
+        const url = new URL(result.url)
+        const code = url.searchParams.get('code')
+
+        if (code) {
+          const { data: session, error: sessionError } = await supabase.auth.exchangeCodeForSession(code)
+          if (sessionError) throw sessionError
+          if (session?.user) {
+            const { data: player } = await supabase
+              .from('players').select('class_type').eq('id', session.user.id).single()
+            navigation.replace(player?.class_type ? 'Main' : 'ClassSelect')
+          }
+        } else {
+          await new Promise(r => setTimeout(r, 500))
+          const { data: { session } } = await supabase.auth.getSession()
+          if (session?.user) {
+            const { data: player } = await supabase
+              .from('players').select('class_type').eq('id', session.user.id).single()
             navigation.replace(player?.class_type ? 'Main' : 'ClassSelect')
           }
         }
       }
-    } catch (err: any) { Alert.alert('Error', err.message) }
-    finally { setLoading(false) }
+    } catch (err: any) {
+      ThemedAlert.alert('Apple Login Failed', err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleTestLogin = async () => {
@@ -215,7 +268,7 @@ export default function LoginScreen({ navigation }: Props) {
         const { data: player } = await supabase.from('players').select('class_type').eq('id', data.user.id).single()
         navigation.replace(player?.class_type ? 'Main' : 'ClassSelect')
       }
-    } catch (err: any) { Alert.alert('Error', err.message) }
+    } catch (err: any) { ThemedAlert.alert('Error', err.message) }
     finally { setLoading(false) }
   }
 

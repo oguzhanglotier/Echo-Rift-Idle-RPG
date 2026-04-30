@@ -10,6 +10,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native'
 import { supabase } from '../lib/supabase'
 import { COLORS } from '../constants'
+import { ThemedAlert } from '../components/ThemedAlert'
 
 const APP_VERSION = '0.1.0 (Beta)'
 
@@ -33,7 +34,7 @@ export default function SettingsScreen({ navigation }: any) {
   }
 
   const handleDeleteAccount = () => {
-    Alert.alert(
+    ThemedAlert.alert(
       '⚠️ Delete Account',
       'This action is PERMANENT. All your progress, items, and purchases will be lost forever.\n\nAre you absolutely sure?',
       [
@@ -42,7 +43,7 @@ export default function SettingsScreen({ navigation }: any) {
           text: 'Yes, Delete',
           style: 'destructive',
           onPress: () => {
-            Alert.alert(
+            ThemedAlert.alert(
               '🚨 Final Warning',
               'Your account will be permanently deleted. This cannot be undone.',
               [
@@ -61,7 +62,7 @@ export default function SettingsScreen({ navigation }: any) {
                     })
                     await supabase.auth.signOut()
                     navigation.reset({ index: 0, routes: [{ name: 'Login' }] })
-                    Alert.alert('Account Deleted', 'Your account deletion request has been submitted. Your data will be removed within 30 days.')
+                    ThemedAlert.alert('Account Deleted', 'Your account deletion request has been submitted. Your data will be removed within 30 days.')
                   }
                 }
               ]
@@ -73,7 +74,7 @@ export default function SettingsScreen({ navigation }: any) {
   }
 
   const handleLogout = async () => {
-    Alert.alert('Logout', 'Are you sure you want to logout?', [
+    ThemedAlert.alert('Logout', 'Are you sure you want to logout?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Logout',
@@ -122,7 +123,7 @@ export default function SettingsScreen({ navigation }: any) {
                   style={[styles.langBtn, language === lang && styles.langBtnActive]}
                   onPress={() => {
                     setLanguage(lang)
-                    Alert.alert('Coming Soon', 'Multi-language support is coming soon!')
+                    ThemedAlert.alert('Coming Soon', 'Multi-language support is coming soon!')
                   }}
                 >
                   <Text style={styles.langFlag}>

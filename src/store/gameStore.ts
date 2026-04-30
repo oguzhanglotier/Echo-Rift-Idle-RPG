@@ -5,6 +5,14 @@
 import { create } from 'zustand'
 import { PlayerState, Item, ActiveQuest, ArenaOpponent } from '../types'
 
+// ✅ Quest tamamlanma toast verisi
+export interface QuestCompletedData {
+  questName: string
+  xp: number
+  gold: number
+  items: number
+}
+
 interface GameStore {
   // Player State
   playerState: PlayerState | null
@@ -15,12 +23,16 @@ interface GameStore {
   // Arena
   arenaOpponents: ArenaOpponent[]
 
+  // ✅ Global quest completion
+  questCompleted: QuestCompletedData | null
+
   // Actions
   setPlayerState: (state: PlayerState) => void
   setLoading: (loading: boolean) => void
   setInitialized: (initialized: boolean) => void
   setError: (error: string | null) => void
   setArenaOpponents: (opponents: ArenaOpponent[]) => void
+  setQuestCompleted: (data: QuestCompletedData | null) => void
 
   // Optimistic updates (UI anında güncellenir)
   updateStamina: (newStamina: number) => void
@@ -38,12 +50,14 @@ export const useGameStore = create<GameStore>((set) => ({
   isInitialized: false,
   error: null,
   arenaOpponents: [],
+  questCompleted: null,
 
   setPlayerState: (state) => set({ playerState: state }),
   setLoading: (loading) => set({ isLoading: loading }),
   setInitialized: (initialized) => set({ isInitialized: initialized }),
   setError: (error) => set({ error }),
   setArenaOpponents: (opponents) => set({ arenaOpponents: opponents }),
+  setQuestCompleted: (data) => set({ questCompleted: data }),
 
   updateStamina: (newStamina) =>
     set((state) => ({
@@ -126,5 +140,6 @@ export const useGameStore = create<GameStore>((set) => ({
       isInitialized: false,
       error: null,
       arenaOpponents: [],
+      questCompleted: null,
     }),
 }))

@@ -128,7 +128,7 @@ export default function DailyLoginModal({ visible, onClose, onClaimed }: Props) 
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
 
-        {loading && (
+        {!!(loading) && (
           <View style={styles.loadingBox}>
             <ActivityIndicator size="large" color="#00D4FF" />
             <Text style={styles.loadingTxt}>Opening vault...</Text>
@@ -146,7 +146,7 @@ export default function DailyLoginModal({ visible, onClose, onClaimed }: Props) 
             {/* Header */}
             <View style={styles.headerRow}>
               <Text style={styles.title}>DAILY REWARD</Text>
-              {isLegendary && <Text style={styles.legendTag}>✦ LEGENDARY DAY ✦</Text>}
+              {!!(isLegendary) && <Text style={styles.legendTag}>✦ LEGENDARY DAY ✦</Text>}
             </View>
             <Text style={[styles.streakTxt, { color: accentColor }]}>
               🔥 {reward.streak} day streak
@@ -167,12 +167,12 @@ export default function DailyLoginModal({ visible, onClose, onClaimed }: Props) 
                   ]}>
                     <Text style={[styles.dayIcon, isPast && styles.dimmed]}>{d.icon}</Text>
                     <Text style={[styles.dayNum, isCurrent && { color: dotColor }]}>{d.day}</Text>
-                    {isPast && (
+                    {!!(isPast) && (
                       <View style={styles.checkOverlay}>
                         <Text style={styles.checkTxt}>✓</Text>
                       </View>
                     )}
-                    {isCurrent && (
+                    {!!(isCurrent) && (
                       <View style={[styles.activeDot, { backgroundColor: dotColor }]} />
                     )}
                   </View>
@@ -200,7 +200,7 @@ export default function DailyLoginModal({ visible, onClose, onClaimed }: Props) 
                       💎 +{reward.rc_reward} RC
                     </Text>
                   )}
-                  {reward.item_rarity && (
+                  {!!(reward.item_rarity) && (
                     <Text style={[styles.rewardVal, { color: accentColor }]}>
                       ⚔️ {reward.item_rarity} Item
                     </Text>

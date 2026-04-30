@@ -1,3 +1,4 @@
+
 // =============================================
 // ECHO RIFT — APP ENTRY POINT
 // =============================================
@@ -7,8 +8,11 @@ import { StatusBar } from 'expo-status-bar'
 import * as Notifications from 'expo-notifications'
 import { Subscription } from 'expo-notifications'
 
+
 import AppNavigator from './src/navigation/AppNavigator'
 import NetworkMonitor from './src/lib/NetworkMonitor'
+import { ThemedAlertProvider } from './src/components/ThemedAlert'
+import ErrorBoundary from './src/components/ErrorBoundary'
 
 export default function App() {
   const notificationListener = useRef<Subscription | null>(null)
@@ -38,8 +42,11 @@ export default function App() {
   return (
     <React.Fragment>
       <StatusBar style="light" />
-      <AppNavigator navigationRef={navigationRef} />
+      <ErrorBoundary>
+        <AppNavigator navigationRef={navigationRef} />
+      </ErrorBoundary>
       <NetworkMonitor navigationRef={navigationRef} />
+      <ThemedAlertProvider /> {/* ✅ EN ALTA — her şeyin üstünde render olur */}
     </React.Fragment>
   )
 }

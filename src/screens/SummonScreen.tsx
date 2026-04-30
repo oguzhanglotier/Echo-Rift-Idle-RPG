@@ -83,7 +83,7 @@ function ResultCard({
             {/* Glow overlay */}
             <Animated.View style={[styles.cardGlow, { backgroundColor: rc, opacity: glowOpacity }]} />
 
-            {result.is_new && (
+            {!!(result.is_new) && (
               <View style={[styles.newBadge, { backgroundColor: rc }]}>
                 <Text style={styles.newBadgeTxt}>NEW</Text>
               </View>
@@ -136,7 +136,6 @@ export default function SummonScreen({ navigation }: any) {
   const loadBanners = async () => {
     if (!userId) return
     const { data, error } = await supabase.rpc('get_summon_banners', { p_player_id: userId })
-    console.log('SUMMON DEBUG:', JSON.stringify({ data, error }))
     if (data?.success) {
       setBanners(data.banners || [])
       setScrolls(data.player_scrolls || 0)
@@ -237,12 +236,12 @@ export default function SummonScreen({ navigation }: any) {
           </View>
         )}
 
-        {activeBanner && (
+        {!!(activeBanner) && (
           <>
             {/* Banner başlık */}
             <View style={styles.bannerHero}>
               <Text style={styles.bannerTitle}>{activeBanner.name}</Text>
-              {activeBanner.featured_champion && (
+              {!!(activeBanner.featured_champion) && (
                 <View style={styles.featuredBadge}>
                   <Text style={styles.featuredTxt}>
                     ⭐ Rate-Up: {activeBanner.featured_champion.name}
@@ -271,7 +270,7 @@ export default function SummonScreen({ navigation }: any) {
 
             {/* Oranlar */}
             <View style={styles.ratesSection}>
-              <Text style={styles.ratesSectionTitle}>ÇIKILMA ORANLARI</Text>
+              <Text style={styles.ratesSectionTitle}>DROP RATES</Text>
               <View style={styles.ratesRow}>
                 {[
                   { label: 'Rare',        val: activeBanner.rates?.rare,        color: '#3B82F6' },
@@ -306,13 +305,13 @@ export default function SummonScreen({ navigation }: any) {
                 <Text style={styles.pullBtnTitle}>10× SUMMON</Text>
                 <Text style={styles.pullBtnCost}>📜 10 scroll  or  💎 {activeBanner.cost_rc_10x}</Text>
                 <View style={styles.valueBadge}>
-                  <Text style={styles.valueBadgeTxt}>10% OFF</Text>
+                  <Text style={styles.valueBadgeTxt}>-10% DISCOUNT</Text>
                 </View>
               </TouchableOpacity>
             </View>
 
             <Text style={styles.guarantee}>
-              {activeBanner.pity?.epic || 30}× pull'da Epic garantili  ·  {activeBanner.pity?.legendary || 80}× pull'da Legendary garantili
+              {activeBanner.pity?.epic || 30}× pulls guaranteed Epic  ·  {activeBanner.pity?.legendary || 80}× pulls guaranteed Legendary
             </Text>
           </>
         )}
@@ -352,14 +351,14 @@ export default function SummonScreen({ navigation }: any) {
             </View>
 
             {/* Yeni championlar listesi */}
-            {allRevealed && (
+            {!!(allRevealed) && (
               <View style={styles.summarySection}>
                 {pullResults.some(r => r.rarity === 'Legendary' || r.rarity === 'Dimensional') && (
                   <Text style={styles.specialPull}>
                     ✨ {pullResults.filter(r => r.rarity === 'Legendary' || r.rarity === 'Dimensional').map(r => r.name).join(', ')}
                   </Text>
                 )}
-                {pityInfo && (
+                {!!(pityInfo) && (
                   <Text style={styles.pityAfter}>
                     Legendary pity: {pityInfo.leg_count}/{pityInfo.leg_max}
                   </Text>
@@ -374,7 +373,7 @@ export default function SummonScreen({ navigation }: any) {
                 onPress={() => { if (allRevealed) { setShowResults(false) } else { handleRevealAll() } }}
               >
                 <Text style={styles.closeResultTxt}>
-                  {allRevealed ? 'OK' : '✨ REVEAL ALL'}
+                  {allRevealed ? 'DONE' : '✨ REVEAL ALL'}
                 </Text>
               </TouchableOpacity>
             </View>

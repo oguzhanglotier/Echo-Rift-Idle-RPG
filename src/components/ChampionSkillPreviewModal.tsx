@@ -49,7 +49,7 @@ export default function ChampionSkillPreviewModal({
         onPress={onClose}
       />
       <View style={styles.box}>
-        {loading && (
+        {!!(loading) && (
           <View style={styles.loading}>
             <ActivityIndicator size="large" color="#00D4FF" />
             <Text style={styles.loadingText}>Loading skill data...</Text>
@@ -101,7 +101,7 @@ function SkillContent({ data, onClose }: { data: ChampionSkillPreview; onClose: 
           <SkillRow key={i} skill={sk} elementColor={elemColor} />
         ))}
 
-        {champ.lore && (
+        {!!champ.lore && (
           <Text style={styles.lore}>"{champ.lore}"</Text>
         )}
 
@@ -135,7 +135,7 @@ function SkillRow({ skill, elementColor }: { skill: ChampionSkillData; elementCo
           <Text style={[styles.typeBadgeText, { color: typeColor }]}>{typeLabel}</Text>
         </View>
         <Text style={[styles.skillName, isActive && { color: elementColor }]}>{skill.name}</Text>
-        {isActive && skill.cooldown && (
+        {!!(isActive) && (skill.cooldown ?? 0) > 0 && (
           <View style={styles.cdBadge}>
             <Text style={styles.cdBadgeText}>CD {skill.cooldown}</Text>
           </View>
@@ -148,9 +148,9 @@ function SkillRow({ skill, elementColor }: { skill: ChampionSkillData; elementCo
         <Text style={[styles.valueText, { color: elementColor }]}>{skill.value_text}</Text>
       </View>
 
-      {isActive && skill.cooldown && (
+      {!!(isActive) && (skill.cooldown ?? 0) > 0 && (
         <Text style={styles.triggerText}>
-          Triggers: Round {skill.cooldown}, {skill.cooldown * 2}, {skill.cooldown * 3}, ...
+          Triggers: Round {skill.cooldown}, {(skill.cooldown ?? 0) * 2}, {(skill.cooldown ?? 0) * 3}, ...
         </Text>
       )}
     </View>

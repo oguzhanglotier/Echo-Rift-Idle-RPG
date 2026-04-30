@@ -10,6 +10,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native'
 import { supabase } from '../lib/supabase'
 import { COLORS } from '../constants'
+import { ThemedAlert } from '../components/ThemedAlert'
 
 const { width } = Dimensions.get('window')
 
@@ -39,6 +40,8 @@ export default function AchievementsScreen({ navigation }: any) {
   const [category, setCategory] = useState<Category>('all')
   const [refreshing, setRefreshing] = useState(false)
   const [claiming, setClaiming] = useState<string | null>(null)
+  const [showcaseIds, setShowcaseIds] = useState<string[]>([])
+  const [savingShowcase, setSavingShowcase] = useState(false)
 
   useFocusEffect(
     useCallback(() => { loadData() }, [])
@@ -50,7 +53,10 @@ export default function AchievementsScreen({ navigation }: any) {
     setUserId(user.id)
 
     const { data } = await supabase.rpc('get_achievements', { p_player_id: user.id })
-    if (data?.success) setAchievements(data.achievements || [])
+    if (data?.success) {
+      setAchievements(data.achievements || [])
+      setShowcaseIds(data.showcase_ids || [])
+    }
   }
 
   const onRefresh = async () => {
@@ -68,14 +74,56 @@ export default function AchievementsScreen({ navigation }: any) {
     })
     setClaiming(null)
     if (data?.success) {
-      Alert.alert(
-        '🎉 Reward Claimed!',
-        `+${data.rc_reward} 💎 RC\n+${data.gold_reward.toLocaleString()} 🪙 Gold`
-      )
+      const lines = []
+      if (data.rc_reward > 0)     lines.push(`+${data.rc_reward} 💎 RC`)
+      if (data.gold_reward > 0)   lines.push(`+${data.gold_reward.toLocaleString()} 🪙 Gold`)
+      if (data.scroll_reward > 0) lines.push(`+${data.scroll_reward} 📜 Echo Sigil${data.scroll_reward > 1 ? 's' : ''}`)
+      ThemedAlert.alert('🎉 Reward Claimed!', lines.join('\n'))
       await loadData()
     } else {
-      Alert.alert('Error', data?.error || 'Failed to claim')
+      ThemedAlert.alert('Error', data?.error || 'Failed to claim')
     }
+  }
+
+  const handleToggleShowcase = async (achievement: any) => {
+    if (!userId || savingShowcase) return
+    if (!achievement.completed) {
+      ThemedAlert.alert('Not Completed', 'You can only showcase completed achievements.')
+      return
+    }
+
+    const isShowcased = showcaseIds.includes(achievement.id)
+    let newIds: string[]
+
+    if (isShowcased) {
+      // Kaldır
+      newIds = showcaseIds.filter((id: string) => id !== achievement.id)
+    } else {
+      // Ekle (max 3)
+      if (showcaseIds.length >= 3) {
+        ThemedAlert.alert('Max 3 Showcase', 'You can only showcase 3 achievements. Remove one first.')
+        return
+      }
+      newIds = [...showcaseIds, achievement.id]
+    }
+
+    setSavingShowcase(true)
+    const { data, error } = await supabase.rpc('set_showcase_achievements', {
+      p_player_id: userId,
+      p_achievement_ids: newIds,
+    })
+    setSavingShowcase(false)
+
+    if (error || !data?.success) {
+      const msgs: Record<string, string> = {
+        MAX_3_SHOWCASE: 'You can only showcase 3 achievements.',
+        NOT_ALL_COMPLETED: 'Only completed achievements can be showcased.',
+      }
+      ThemedAlert.alert('Error', msgs[data?.error] || error?.message || 'Failed to update showcase')
+      return
+    }
+
+    setShowcaseIds(newIds)
   }
 
   const filtered = category === 'all'
@@ -101,7 +149,10 @@ export default function AchievementsScreen({ navigation }: any) {
           <Text style={styles.backBtn}>← BACK</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>ACHIEVEMENTS</Text>
-        <Text style={styles.headerCount}>{completedCount}/{totalCount}</Text>
+        <View style={{ alignItems: 'flex-end' }}>
+          <Text style={styles.headerCount}>{completedCount}/{totalCount}</Text>
+          <Text style={styles.showcaseCount}>⭐ {showcaseIds.length}/3 showcased</Text>
+        </View>
       </View>
 
       {/* Progress Bar */}
@@ -163,7 +214,7 @@ export default function AchievementsScreen({ navigation }: any) {
                   <Text style={styles.statusEmoji}>
                     {item.completed
                       ? item.reward_granted ? '✅' : '🎁'
-                      : CATEGORY_ICONS[item.category] || '🏆'}
+                      : item.icon || CATEGORY_ICONS[item.category] || '🏆'}
                   </Text>
                 </View>
 
@@ -194,12 +245,15 @@ export default function AchievementsScreen({ navigation }: any) {
                     {item.gold_reward > 0 && (
                       <Text style={styles.rewardTag}>🪙 {item.gold_reward.toLocaleString()}</Text>
                     )}
+                    {item.scroll_reward > 0 && (
+                      <Text style={[styles.rewardTag, { color: '#A855F7' }]}>📜 {item.scroll_reward}</Text>
+                    )}
                   </View>
                 </View>
               </View>
 
               {/* Claim button */}
-              {canClaim && (
+              {!!(canClaim) && (
                 <TouchableOpacity
                   style={styles.claimBtn}
                   onPress={() => handleClaim(item)}
@@ -211,9 +265,29 @@ export default function AchievementsScreen({ navigation }: any) {
                 </TouchableOpacity>
               )}
 
-              {item.completed && item.reward_granted && (
-                <Text style={styles.claimedText}>CLAIMED</Text>
-              )}
+              {/* Right side: claimed badge + showcase toggle */}
+              <View style={styles.rightCol}>
+                {item.completed && item.reward_granted && (
+                  <Text style={styles.claimedText}>CLAIMED</Text>
+                )}
+                {item.completed && (
+                  <TouchableOpacity
+                    style={[
+                      styles.showcaseBtn,
+                      showcaseIds.includes(item.id) && styles.showcaseBtnActive,
+                    ]}
+                    onPress={() => handleToggleShowcase(item)}
+                    disabled={savingShowcase}
+                  >
+                    <Text style={[
+                      styles.showcaseBtnText,
+                      showcaseIds.includes(item.id) && styles.showcaseBtnTextActive,
+                    ]}>
+                      {showcaseIds.includes(item.id) ? '⭐ SHOWCASED' : '☆ SHOWCASE'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
           )
         }}
@@ -223,6 +297,40 @@ export default function AchievementsScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
+  rightCol: {
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    gap: 6,
+    paddingLeft: 8,
+  },
+  showcaseBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255,215,0,0.3)',
+    backgroundColor: 'rgba(255,215,0,0.05)',
+  },
+  showcaseBtnActive: {
+    borderColor: '#FFD700',
+    backgroundColor: 'rgba(255,215,0,0.18)',
+  },
+  showcaseBtnText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: 'rgba(255,215,0,0.5)',
+    letterSpacing: 1,
+  },
+  showcaseBtnTextActive: {
+    color: '#FFD700',
+  },
+  showcaseCount: {
+    fontSize: 9,
+    color: '#FFD700',
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    marginTop: 2,
+  },
   container:  { flex: 1, backgroundColor: COLORS.bg },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',

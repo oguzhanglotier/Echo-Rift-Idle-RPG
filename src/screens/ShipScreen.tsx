@@ -12,6 +12,7 @@ import { useFocusEffect } from '@react-navigation/native'
 import { supabase } from '../lib/supabase'
 import { useGame } from '../hooks/useGame'
 import { COLORS } from '../constants'
+import { ThemedAlert } from '../components/ThemedAlert'
 
 const { width, height } = Dimensions.get('window')
 const CORNER = 10
@@ -140,9 +141,9 @@ export default function ShipScreen() {
     if (!module.can_upgrade) {
       const diff = Math.max(0, new Date(module.upgrade_ready_at).getTime() - Date.now())
       const h = Math.floor(diff / 3600000), m = Math.floor((diff % 3600000) / 60000)
-      Alert.alert('Cooldown Active', `Next upgrade in ${h}h ${m}m`); return
+      ThemedAlert.alert('Cooldown Active', `Next upgrade in ${h}h ${m}m`); return
     }
-    if (module.level >= 10) { Alert.alert('Max Level', 'Fully upgraded!'); return }
+    if (module.level >= 10) { ThemedAlert.alert('Max Level', 'Fully upgraded!'); return }
 
     const nextLevel = module.level + 1
     const cost = UPGRADE_COSTS[nextLevel]
@@ -151,14 +152,14 @@ export default function ShipScreen() {
     if (cost.quantum) costText += `\n🔮 Quantum: ${cost.quantum}`
     if (cost.rift)    costText += `\n💠 Rift: ${cost.rift}`
 
-    Alert.alert(`Upgrade → Level ${nextLevel}`, costText, [
+    ThemedAlert.alert(`Upgrade → Level ${nextLevel}`, costText, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'UPGRADE', onPress: async () => {
         setLoading(moduleType)
         const result = await upgradeShipModule(userId, moduleType)
         if (result?.success) {
           await loadData()
-          Alert.alert('✅ Upgraded!', `Level ${nextLevel} unlocked!`)
+          ThemedAlert.alert('✅ Upgraded!', `Level ${nextLevel} unlocked!`)
         } else {
           const errMsg =
             result?.error === 'INSUFFICIENT_SALVAGE' ? 'Not enough Salvage Parts!' :
@@ -166,7 +167,7 @@ export default function ShipScreen() {
             result?.error === 'INSUFFICIENT_RIFT'     ? 'Not enough Rift Crystal!' :
             result?.error === 'INSUFFICIENT_SCRAP'    ? 'Not enough Scrap Metal!' :
             result?.error === 'COOLDOWN_ACTIVE'       ? '24h cooldown active!' : 'Upgrade failed'
-          Alert.alert('Error', errMsg)
+          ThemedAlert.alert('Error', errMsg)
         }
         setLoading(null)
       }},
@@ -178,15 +179,15 @@ export default function ShipScreen() {
     const result = await useShipSkill(userId, moduleType)
     if (result?.success) {
       await loadData()
-      Alert.alert('⚡ ACTIVATED!', moduleType === 'hull'
+      ThemedAlert.alert('⚡ ACTIVATED!', moduleType === 'hull'
         ? 'FORTIFY: +5% HP & DEF — 30 min'
         : 'OVERCHARGE: +5% ATK — 30 min')
     } else {
       if (result?.error === 'SKILL_COOLDOWN') {
         const diff = Math.max(0, new Date(result.ready_at).getTime() - Date.now())
         const h = Math.floor(diff / 3600000), m = Math.floor((diff % 3600000) / 60000)
-        Alert.alert('Cooldown', `Ready in ${h}h ${m}m`)
-      } else Alert.alert('Error', result?.error || 'Failed')
+        ThemedAlert.alert('Cooldown', `Ready in ${h}h ${m}m`)
+      } else ThemedAlert.alert('Error', result?.error || 'Failed')
     }
   }
 
@@ -280,7 +281,7 @@ export default function ShipScreen() {
         </View>
 
         {/* CARGO — tam genişlik */}
-        {cargoMod && (
+        {!!(cargoMod) && (
           <ModuleCard
             module={cargoMod}
             info={MODULE_INFO.cargo}
@@ -328,12 +329,12 @@ function ModuleCard({ module, info, cost, cooldown, skillTime, isLoading, onUpgr
       </Text>
 
       {/* Maliyetler */}
-      {cost && (
+      {!!(cost) && (
         <View style={styles.costRow}>
           <Text style={styles.costItem}>⚙️{cost.scrap}</Text>
-          {cost.salvage && <Text style={styles.costItem}>🔩{cost.salvage}</Text>}
-          {cost.quantum && <Text style={styles.costItem}>🔮{cost.quantum}</Text>}
-          {cost.rift    && <Text style={styles.costItem}>💠{cost.rift}</Text>}
+          {cost.salvage > 0 && <Text style={styles.costItem}>🔩{cost.salvage}</Text>}
+          {cost.quantum > 0 && <Text style={styles.costItem}>🔮{cost.quantum}</Text>}
+          {cost.rift    > 0 && <Text style={styles.costItem}>💠{cost.rift}</Text>}
         </View>
       )}
 

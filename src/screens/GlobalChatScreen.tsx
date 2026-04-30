@@ -14,6 +14,8 @@ import { supabase } from '../lib/supabase'
 import { useGameStore } from '../store/gameStore'
 import { COLORS, CLASS_INFO } from '../constants'
 import { ClassType } from '../types'
+import { ThemedAlert } from '../components/ThemedAlert'
+import { PlayerActionMenu } from '../components/PlayerActionMenu'
 
 const { width } = Dimensions.get('window')
 const CORNER = 8
@@ -30,7 +32,7 @@ const getClassIcon = (classType: string | null) => {
 }
 
 // ─── MESAJ BALONU ────────────────────────────────────────────────────────────
-function MessageBubble({ item, isMe }: { item: any; isMe: boolean }) {
+function MessageBubble({ item, isMe, onPlayerPress }: { item: any; isMe: boolean; onPlayerPress?: (p: any) => void }) {
   const classColor = getClassColor(item.class_type)
   const classIcon  = getClassIcon(item.class_type)
 
@@ -56,19 +58,31 @@ function MessageBubble({ item, isMe }: { item: any; isMe: boolean }) {
 
   return (
     <View style={styles.rowOther}>
-      {/* Avatar */}
-      <View style={[styles.avatar, { borderColor: classColor + '80' }]}>
-        <Text style={styles.avatarIcon}>{classIcon}</Text>
-      </View>
+      {/* Avatar — tıklanabilir */}
+      <TouchableOpacity
+        onPress={() => onPlayerPress && onPlayerPress(item)}
+        activeOpacity={0.7}
+        disabled={!onPlayerPress}
+      >
+        <View style={[styles.avatar, { borderColor: classColor + '80' }]}>
+          <Text style={styles.avatarIcon}>{classIcon}</Text>
+        </View>
+      </TouchableOpacity>
 
       <View style={styles.bubbleOtherWrap}>
-        {/* Kullanıcı adı + level */}
-        <View style={styles.nameRow}>
-          <Text style={[styles.userName, { color: classColor }]}>
-            {item.username}
-          </Text>
-          <Text style={styles.userLevel}>Lv.{item.level}</Text>
-        </View>
+        {/* Kullanıcı adı + level — tıklanabilir */}
+        <TouchableOpacity
+          onPress={() => onPlayerPress && onPlayerPress(item)}
+          activeOpacity={0.7}
+          disabled={!onPlayerPress}
+        >
+          <View style={styles.nameRow}>
+            <Text style={[styles.userName, { color: classColor }]}>
+              {item.username}
+            </Text>
+            <Text style={styles.userLevel}>Lv.{item.level}</Text>
+          </View>
+        </TouchableOpacity>
 
         {/* Mesaj */}
         <View style={styles.bubbleOther}>
@@ -87,6 +101,7 @@ export default function GlobalChatScreen({ navigation }: any) {
   const [messages,  setMessages]  = useState<any[]>([])
   const [inputText, setInputText] = useState('')
   const [sending,   setSending]   = useState(false)
+  const [actionMenuPlayer, setActionMenuPlayer] = useState<any | null>(null)
   const [onlineCount, setOnlineCount] = useState(0)
 
   const flatListRef   = useRef<FlatList>(null)
@@ -144,9 +159,13 @@ export default function GlobalChatScreen({ navigation }: any) {
           if (!isMountedRef.current) return
           const newMsg = payload.new as any
           setMessages(prev => {
-            // Duplicate kontrol
+            // Duplicate kontrol (gerçek id ile)
             if (prev.some(m => m.id === newMsg.id)) return prev
-            return [...prev, newMsg]
+            // Kendi gönderdiğimiz temp mesajı varsa sil, gerçeğini koy
+            const filtered = prev.filter(m =>
+              !(m.id.startsWith('temp-') && m.player_id === newMsg.player_id && m.message === newMsg.message)
+            )
+            return [...filtered, newMsg]
           })
           setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 50)
         }
@@ -170,12 +189,26 @@ export default function GlobalChatScreen({ navigation }: any) {
     if (!text || !userId || sending) return
 
     if (text.length > 200) {
-      Alert.alert('Too long', 'Max 200 characters')
+      ThemedAlert.alert('Too long', 'Max 200 characters')
       return
     }
 
     setSending(true)
     setInputText('')
+
+    // ✅ Optimistic update: mesajı hemen göster, subscription geç gelse de fark etmez
+    const player = playerState?.player
+    const tempMsg = {
+      id: `temp-${Date.now()}`,
+      player_id: userId,
+      username:   player?.username ?? 'You',
+      class_type: player?.class_type ?? null,
+      level:      player?.level ?? 1,
+      message:    text,
+      created_at: new Date().toISOString(),
+    }
+    setMessages(prev => [...prev, tempMsg])
+    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 50)
 
     const { data } = await supabase.rpc('send_global_message', {
       p_player_id: userId,
@@ -185,13 +218,18 @@ export default function GlobalChatScreen({ navigation }: any) {
     setSending(false)
 
     if (!data?.success) {
+      // Başarısızsa optimistic mesajı geri al
+      setMessages(prev => prev.filter(m => m.id !== tempMsg.id))
       const errMsg =
         data?.error === 'SLOW_DOWN' ? 'Wait 3 seconds between messages!' :
         data?.error === 'TOO_LONG'  ? 'Message too long!' :
         data?.error || 'Failed to send'
-      Alert.alert('Error', errMsg)
+      ThemedAlert.alert('Error', errMsg)
       setInputText(text) // geri koy
     }
+    // Başarılıysa: subscription gerçek mesajı getirince temp msg silinir
+    // (duplicate kontrol zaten var: prev.some(m => m.id === newMsg.id))
+    // Temp id ile real id farklı olacak — temp'i sil, real'i ekle
   }
 
   const player     = playerState?.player
@@ -239,7 +277,7 @@ export default function GlobalChatScreen({ navigation }: any) {
             </View>
           }
           renderItem={({ item }) => (
-            <MessageBubble item={item} isMe={item.player_id === userId} />
+            <MessageBubble item={item} isMe={item.player_id === userId} onPlayerPress={(p) => { if (p.player_id !== userId) setActionMenuPlayer(p) }} />
           )}
         />
 
@@ -273,6 +311,20 @@ export default function GlobalChatScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      {/* PlayerActionMenu — başkasının username/avatar'ına tıklanınca */}
+      {!!(actionMenuPlayer) && (
+        <PlayerActionMenu
+          visible={!!actionMenuPlayer}
+          onClose={() => setActionMenuPlayer(null)}
+          targetPlayerId={actionMenuPlayer.player_id}
+          targetUsername={actionMenuPlayer.username}
+          targetClassType={actionMenuPlayer.class_type}
+          targetLevel={actionMenuPlayer.level}
+          navigation={navigation}
+          currentUserId={userId}
+        />
+      )}
     </View>
   )
 }

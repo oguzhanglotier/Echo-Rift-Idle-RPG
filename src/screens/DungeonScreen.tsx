@@ -20,6 +20,7 @@ import { useGameStore } from '../store/gameStore'
 import { useGame } from '../hooks/useGame'
 import { COLORS } from '../constants'
 import { DungeonBattleResult } from '../types'
+import { ThemedAlert } from '../components/ThemedAlert'
 
 const { width, height } = Dimensions.get('window')
 
@@ -50,10 +51,7 @@ export default function DungeonScreen({ navigation }: any) {
       setUserId(user.id)
       const state = await fetchPlayerState(user.id)
       const currentLevel = state?.player?.level || 0
-      console.log('STATE LEVEL:', state?.player?.level)
       // prevLevelRef yok, DungeonScreen'de eklenmemiş, sadece örnek için null yazıyoruz
-      console.log('PREV LEVEL:', null)
-      console.log('STATE TYPE:', typeof state)
     }
   }
 
@@ -113,14 +111,14 @@ export default function DungeonScreen({ navigation }: any) {
     const { dungeon } = playerState
 
     if (dungeon.attempts_today >= dungeon.max_attempts) {
-      Alert.alert(
+      ThemedAlert.alert(
         'No Attempts Left',
         `Daily attempts exhausted.\nResets at UTC 00:00\n\nBuy +1 attempt for 150 RC?`,
         [
           { text: 'Cancel', style: 'cancel' },
           {
             text: 'Buy Attempt (150 RC)',
-            onPress: () => Alert.alert('Coming Soon', 'RC purchase coming soon!'),
+            onPress: () => ThemedAlert.alert('Coming Soon', 'RC purchase coming soon!'),
           },
         ]
       )
@@ -142,7 +140,7 @@ export default function DungeonScreen({ navigation }: any) {
         // Defeat popup
         if (result.result === 'defeat') {
           setTimeout(() => {
-            Alert.alert(
+            ThemedAlert.alert(
               '💀 DEFEATED',
               `Floor ${result.floor} boss was too strong!\n\n` +
               `📌 Tips to get stronger:\n` +
@@ -188,9 +186,26 @@ export default function DungeonScreen({ navigation }: any) {
 
   const { dungeon, stats } = playerState
   const boss = getBossVisual(dungeon.current_floor)
-  const bossHP = 500 + (dungeon.current_floor * 85)
-  const bossATK = 50 + (dungeon.current_floor * 12)
-  const bossHP2 = Math.max(bossHP, stats.power_score * 2)
+  // ✅ SQL calculate_boss_stats ile birebir eşleşen formül
+  const getDungeonScale = (floor: number): number => {
+    if (floor <= 10)  return 1.00
+    if (floor <= 30)  return 1.20
+    if (floor <= 50)  return 1.40
+    if (floor <= 100) return 1.60
+    if (floor <= 200) return 1.80
+    if (floor <= 300) return 2.00
+    if (floor <= 400) return 2.20
+    return 2.50
+  }
+  const floor = dungeon.current_floor
+  const scale = getDungeonScale(floor)
+  const bossPower = Math.floor(stats.power_score * scale)
+  const bossHP2   = Math.max(floor * 100, Math.floor(bossPower * 2.0))
+  const bossATK   = Math.max(
+    20 + floor * 8,
+    Math.floor((50 + floor * 8) * scale),
+    Math.floor(stats.power_score * 0.14)
+  )
 
   return (
     <View style={styles.container}>
@@ -332,7 +347,7 @@ export default function DungeonScreen({ navigation }: any) {
             </View>
 
             {/* Ödüller */}
-            {lastResult.rewards && (
+            {!!(lastResult.rewards) && (
               <View style={styles.rewards}>
                 <Text style={styles.rewardsTitle}>REWARDS</Text>
                 <View style={styles.rewardsRow}>
@@ -373,7 +388,7 @@ export default function DungeonScreen({ navigation }: any) {
             )}
 
             {/* Lore fragment */}
-            {lastResult.lore && (
+            {!!(lastResult.lore) && (
               <View style={styles.loreBox}>
                 <Text style={styles.loreTitle}>
                   📜 {lastResult.lore.title}

@@ -157,7 +157,7 @@ export default function DailyMissionsScreen({ navigation }: any) {
               key={config.key}
               style={[styles.missionCard, done && styles.missionCardDone]}
             >
-              {done && (
+              {!!(done) && (
                 <View style={styles.doneBadge}>
                   <Text style={styles.doneBadgeText}>✓ DONE</Text>
                 </View>
@@ -240,7 +240,7 @@ export default function DailyMissionsScreen({ navigation }: any) {
             </View>
           </View>
 
-          {bonus.done && (
+          {!!(bonus.done) && (
             <Text style={styles.bonusClaimedNote}>
               ✓ Collected today. Come back tomorrow!
             </Text>

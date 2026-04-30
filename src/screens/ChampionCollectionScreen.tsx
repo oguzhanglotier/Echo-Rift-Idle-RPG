@@ -43,6 +43,77 @@ const RARITY_ORDER: Record<string, number> = {
   Dimensional: 0, Legendary: 1, Epic: 2, Rare: 3,
 }
 
+// Skill effect → temiz Türkçe/İngilizce etiket (ChampionDetailModal özet listesi için)
+const EFFECT_LABELS: Record<string, string> = {
+  // Damage
+  reflect_percent: 'Damage Reflect',
+  reflect_dmg: 'Damage Reflect',
+  phys_dmg_reduction: 'Physical Damage Reduction',
+  dmg_reduction: 'Damage Reduction',
+  // Heal / Regen
+  hp_regen: 'HP Regen / Round',
+  hp_regen_slow: 'HP Regen / Round',
+  hp_regen_fire: 'HP Regen / Round',
+  hp_regen_team: 'Team HP Regen / Round',
+  heal_per_turn: 'HP Regen / Round',
+  heal_over_time: 'HP Regen Over Time',
+  heal_lowest_hp: 'Heals Lowest HP Ally',
+  heal_on_skill: 'Heal On Skill Use',
+  heal_from_dmg: 'Lifesteal (Passive)',
+  lifesteal_passive: 'Lifesteal (Passive)',
+  hp_steal: 'HP Steal',
+  hp_steal_skill: 'HP Steal On Skill',
+  steal_hp_heal: 'Lifesteal On Hit',
+  lifesteal_dmg: 'Lifesteal On Hit',
+  def_regen: 'DEF Regen / Round',
+  // ATK buffs
+  atk_bonus: 'ATK Bonus',
+  atk_bonus_fire: 'ATK Bonus (Fire Synergy)',
+  atk_bonus_night: 'ATK Bonus (Night Phase)',
+  atk_buff_team: 'ATK Buff (Team)',
+  atk_first_turn: 'ATK Bonus (Round 1)',
+  atk_on_hit: 'ATK Bonus On Hit',
+  first_strike: 'Always Attacks First',
+  // DEF / Resist
+  def_bonus: 'DEF Bonus',
+  def_on_low_hp: 'DEF Bonus At Low HP',
+  def_scale_hp: 'DEF Scales With HP',
+  def_buff_team: 'DEF Buff (Team)',
+  // Crit
+  crit_chance_bonus: 'Crit Chance Bonus',
+  crit_dmg_bonus: 'Crit Damage Bonus',
+  crit_on_kill: 'Guaranteed Crit On Kill',
+  // Dodge / Speed
+  dodge_bonus: 'Dodge Bonus',
+  dodge_on_low_hp: 'Dodge Bonus At Low HP',
+  atk_speed_bonus: 'Attack Speed Bonus',
+  atk_speed_team: 'Attack Speed (Team)',
+  // Enemy debuffs
+  reduce_enemy_atk: 'Reduces Enemy ATK',
+  def_reduction_aura: 'Reduces Enemy DEF',
+  atk_debuff_on_hit: 'ATK Debuff On Hit',
+  slow_attackers: 'Slows Attackers',
+  fear_on_hit: 'Fear On Hit',
+  // Immune
+  immune_pierce: 'Immune To Pierce',
+  immune_knockback: 'Immune To Knockback',
+  immune_to_debuff: 'Immune To Debuffs',
+  // DoT
+  dot_dmg: 'DoT Damage',
+  dot_on_crit: 'DoT On Critical Hit',
+  aoe_small_on_atk: 'AoE Splash On Attack',
+  reflect_lightning: 'Reflects Lightning Damage',
+  // Attract / Taunt
+  attract_hits: 'Taunts Enemies',
+  // Execute
+  execute_threshold: 'Execute Below HP Threshold',
+  // Skill stack
+  skill_dmg_stack: 'Skill Damage Stacks',
+  // Status
+  stun_on_crit: 'Stun On Critical Hit',
+  dmg_after_dodge: 'Bonus Damage After Dodge',
+}
+
 // ─── CHAMPION KARTI ──────────────────────────────────────────────────────────
 function ChampionCard({ champ, onPress }: { champ: any; onPress: () => void }) {
   const rc = RARITY_COLORS[champ.rarity] || '#888'
@@ -60,7 +131,7 @@ function ChampionCard({ champ, onPress }: { champ: any; onPress: () => void }) {
       activeOpacity={0.75}
     >
       {/* Arka plan tint */}
-      {champ.owned && (
+      {!!(champ.owned) && (
         <View style={[styles.cardBg, { backgroundColor: rc + '18' }]} />
       )}
 
@@ -80,12 +151,12 @@ function ChampionCard({ champ, onPress }: { champ: any; onPress: () => void }) {
       </Text>
 
       {/* Stars */}
-      {champ.owned && (
+      {!!(champ.owned) && (
         <Text style={styles.stars}>{'★'.repeat(champ.stars)}</Text>
       )}
 
       {/* Kilit ikonu */}
-      {locked && <Text style={styles.lockIcon}>🔒</Text>}
+      {!!(locked) && <Text style={styles.lockIcon}>🔒</Text>}
     </TouchableOpacity>
   )
 }
@@ -168,15 +239,15 @@ function ChampionDetailModal({
                 {/* Stats */}
                 <View style={styles.statGrid}>
                   <View style={styles.statItem}>
-                    <Text style={styles.statLbl}>ATK KATKISI</Text>
+                    <Text style={styles.statLbl}>ATK BONUS</Text>
                     <Text style={[styles.statVal, { color: '#EF4444' }]}>+{lvlAtk}</Text>
                   </View>
                   <View style={styles.statItem}>
-                    <Text style={styles.statLbl}>HP KATKISI</Text>
+                    <Text style={styles.statLbl}>HP BONUS</Text>
                     <Text style={[styles.statVal, { color: '#00FF88' }]}>+{lvlHp}</Text>
                   </View>
                   <View style={styles.statItem}>
-                    <Text style={styles.statLbl}>DEF KATKISI</Text>
+                    <Text style={styles.statLbl}>DEF BONUS</Text>
                     <Text style={[styles.statVal, { color: '#3B82F6' }]}>+{lvlDef}</Text>
                   </View>
                   <View style={styles.statItem}>
@@ -188,19 +259,19 @@ function ChampionDetailModal({
                 {/* Skills */}
                 <View style={styles.skillSection}>
                   <View style={styles.skillSectionHeader}>
-                    <Text style={styles.skillSectionTitle}>SKİLLER</Text>
+                    <Text style={styles.skillSectionTitle}>SKILLS</Text>
                     <TouchableOpacity
                       style={[styles.skillInfoBtn, { borderColor: rc }]}
                       onPress={onShowSkillPreview}
                       activeOpacity={0.7}
                     >
-                      <Text style={[styles.skillInfoBtnTxt, { color: rc }]}>? DETAY</Text>
+                      <Text style={[styles.skillInfoBtnTxt, { color: rc }]}>? DETAILS</Text>
                     </TouchableOpacity>
                   </View>
                   {[
-                    { label: 'Pasif 1', data: champ.skill_passive_1, lv: champ.skill_1_level },
-                    { label: 'Pasif 2', data: champ.skill_passive_2, lv: champ.skill_2_level },
-                    { label: 'Aktif',   data: champ.skill_active,    lv: champ.skill_3_level },
+                    { label: 'Passive 1', data: champ.skill_passive_1, lv: champ.skill_1_level },
+                    { label: 'Passive 2', data: champ.skill_passive_2, lv: champ.skill_2_level },
+                    { label: 'Active',  data: champ.skill_active,    lv: champ.skill_3_level },
                   ].map((s, i) => s.data?.name && (
                     <TouchableOpacity
                       key={i}
@@ -213,8 +284,8 @@ function ChampionDetailModal({
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text style={styles.skillName}>{s.data.name}</Text>
-                        {s.data.effect && (
-                          <Text style={styles.skillEffect}>{s.data.effect.replace(/_/g, ' ')} · Lv{s.lv}</Text>
+                        {!!(s.data.effect) && (
+                          <Text style={styles.skillEffect}>{EFFECT_LABELS[s.data.effect] || s.data.effect.replace(/_/g, ' ')} · Lv{s.lv}</Text>
                         )}
                       </View>
                       <View style={[styles.skillRowQ, { borderColor: rc + '60' }]}>
@@ -225,7 +296,7 @@ function ChampionDetailModal({
                 </View>
 
                 {/* Lore */}
-                {champ.lore && (
+                {!!(champ.lore) && (
                   <Text style={styles.loreText}>"{champ.lore}"</Text>
                 )}
 
@@ -255,7 +326,7 @@ function ChampionDetailModal({
                 {/* STAR ASCEND */}
                 {champ.stars < 6 && (
                   <View style={styles.upgradeSection}>
-                    <Text style={styles.upgradeSectionTitle}>YILDIZ YÜKSELT</Text>
+                    <Text style={styles.upgradeSectionTitle}>STAR UPGRADE</Text>
                     <View style={styles.ascendRow}>
                       <View>
                         <Text style={[styles.starsLarge, { color: rc, fontSize: 20 }]}>
@@ -271,14 +342,14 @@ function ChampionDetailModal({
                         }]}
                         onPress={() => onAscend(champ.pc_id)}
                       >
-                        <Text style={[styles.ascendBtnTxt, { color: rc }]}>★ YÜKSELT</Text>
+                        <Text style={[styles.ascendBtnTxt, { color: rc }]}>★ UPGRADE</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
                 )}
                 {champ.stars >= 6 && (
                   <View style={styles.upgradeSection}>
-                    <Text style={[styles.upgradeSectionTitle, { color: rc }]}>⚡ AWAKENED — MAX YILDIZ</Text>
+                    <Text style={[styles.upgradeSectionTitle, { color: rc }]}>⚡ AWAKENED — MAX STARS</Text>
                   </View>
                 )}
 
@@ -289,11 +360,11 @@ function ChampionDetailModal({
                       style={styles.unequipBtn}
                       onPress={() => onUnequip(champ.pc_id)}
                     >
-                      <Text style={styles.unequipBtnTxt}>UNEQUIP FROM SLOT {champ.slot_index + 1}</Text>
+                      <Text style={styles.unequipBtnTxt}>REMOVE FROM SLOT {champ.slot_index + 1}</Text>
                     </TouchableOpacity>
                   ) : (
                     <View style={styles.equipRow}>
-                      <Text style={styles.equipLabel}>Equip to slot:</Text>
+                      <Text style={styles.equipLabel}>Place in slot:</Text>
                       {[0, 1].map(slot => (
                         <TouchableOpacity
                           key={slot}
@@ -464,7 +535,7 @@ export default function ChampionCollectionScreen({ navigation }: any) {
 
       {/* Aktif slotlar */}
       <View style={styles.activeSlots}>
-        <Text style={styles.activeSlotsLabel}>AKTİF TAKIM</Text>
+        <Text style={styles.activeSlotsLabel}>ACTIVE TEAM</Text>
         <View style={styles.activeSlotRow}>
           {[0, 1].map(slot => (
             <View key={slot} style={[styles.activeSlotBox, activeSlots[slot] && {

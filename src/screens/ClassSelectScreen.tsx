@@ -19,6 +19,7 @@ import { supabase } from '../lib/supabase'
 import { COLORS, CLASS_INFO } from '../constants'
 import { RootStackParamList } from '../navigation/AppNavigator'
 import { ClassType } from '../types'
+import { ThemedAlert } from '../components/ThemedAlert'
 
 const { width } = Dimensions.get('window')
 
@@ -48,7 +49,7 @@ export default function ClassSelectScreen({ navigation }: Props) {
 
   const handleConfirm = async () => {
     if (!selected) {
-      Alert.alert('Select Protocol', 'Choose your combat protocol first.')
+      ThemedAlert.alert('Select Protocol', 'Choose your combat protocol first.')
       return
     }
 
@@ -68,7 +69,7 @@ export default function ClassSelectScreen({ navigation }: Props) {
 
       navigation.replace('Main')
     } catch (err: any) {
-      Alert.alert('Error', err.message)
+      ThemedAlert.alert('Error', err.message)
     } finally {
       setLoading(false)
     }
@@ -113,7 +114,7 @@ export default function ClassSelectScreen({ navigation }: Props) {
                 activeOpacity={0.8}
               >
                 {/* Seçili indicator */}
-                {isSelected && (
+                {!!(isSelected) && (
                   <View
                     style={[
                       styles.selectedIndicator,
@@ -131,7 +132,7 @@ export default function ClassSelectScreen({ navigation }: Props) {
                     </Text>
                     <Text style={styles.cardProtocol}>{info.protocol}</Text>
                   </View>
-                  {isSelected && (
+                  {!!(isSelected) && (
                     <View
                       style={[
                         styles.checkBadge,

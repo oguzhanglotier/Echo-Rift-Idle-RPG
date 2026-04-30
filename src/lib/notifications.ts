@@ -49,7 +49,7 @@ export async function scheduleQuestNotification(questName: string, endsAt: Date,
       content: { title: '⚡ Quest Complete!', body: `${questName} finished. Claim your rewards!`, data: { type: 'quest_complete', questId } },
       trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds },
     })
-  } catch (e) { console.log('scheduleQuestNotification error:', e) }
+  } catch (e) { console.error('scheduleQuestNotification error:', e) }
 }
 
 export async function cancelQuestNotification(questId: string) {
@@ -66,7 +66,7 @@ export async function scheduleStaminaNotification(currentStamina: number, maxSta
       content: { title: '⚡ Stamina Full!', body: 'Your stamina is full. Time to go on a quest!', data: { type: 'stamina_full' } },
       trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds },
     })
-  } catch (e) { console.log('scheduleStaminaNotification error:', e) }
+  } catch (e) { console.error('scheduleStaminaNotification error:', e) }
 }
 
 export async function scheduleAfkFullNotification(passType: 'free' | 'silver' | 'gold', lastCollectedAt: Date) {
@@ -80,7 +80,7 @@ export async function scheduleAfkFullNotification(passType: 'free' | 'silver' | 
       content: { title: '💰 AFK Rewards Full!', body: 'Your offline rewards are maxed out. Collect now!', data: { type: 'afk_full' } },
       trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds },
     })
-  } catch (e) { console.log('scheduleAfkFullNotification error:', e) }
+  } catch (e) { console.error('scheduleAfkFullNotification error:', e) }
 }
 
 export async function cancelAfkNotification() {
@@ -101,7 +101,7 @@ export async function scheduleGuildBossNotification() {
       content: { title: '👾 New Guild Boss!', body: 'A new weekly boss has appeared. Attack with your guild!', data: { type: 'guild_boss' } },
       trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds, repeats: false },
     })
-  } catch (e) { console.log('scheduleGuildBossNotification error:', e) }
+  } catch (e) { console.error('scheduleGuildBossNotification error:', e) }
 }
 
 export async function scheduleDailyReminder() {
@@ -112,7 +112,7 @@ export async function scheduleDailyReminder() {
       content: { title: '🎮 Echo Rift', body: "Daily rewards waiting! Don't lose your streak.", data: { type: 'daily_reminder' } },
       trigger: { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour: 10, minute: 0 },
     })
-  } catch (e) { console.log('scheduleDailyReminder error:', e) }
+  } catch (e) { console.error('scheduleDailyReminder error:', e) }
 }
 
 export async function scheduleDungeonResetNotification() {
@@ -127,7 +127,7 @@ export async function scheduleDungeonResetNotification() {
       content: { title: '⚔️ Dungeon Ready!', body: 'Your dungeon attempts have reset. Time to fight!', data: { type: 'dungeon_reset' } },
       trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds },
     })
-  } catch (e) { console.log('scheduleDungeonResetNotification error:', e) }
+  } catch (e) { console.error('scheduleDungeonResetNotification error:', e) }
 }
 
 export async function cancelAllNotifications() {

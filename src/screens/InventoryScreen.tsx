@@ -6,7 +6,7 @@
 
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  Alert, StatusBar, Dimensions, Modal, ScrollView, Image,
+  StatusBar, Dimensions, Modal, ScrollView, Image,
   Animated, Easing,
 } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
@@ -15,12 +15,18 @@ import { supabase } from '../lib/supabase'
 import { useGameStore } from '../store/gameStore'
 import { useGame } from '../hooks/useGame'
 import { COLORS, RARITY_COLORS, CLASS_INFO } from '../constants'
+import { getItemImage } from '../constants/itemImages'
 import { Rarity, ClassType } from '../types'
+import { ThemedAlert } from '../components/ThemedAlert'
 
 const { width, height } = Dimensions.get('window')
 const GRID_PAD  = 12
 const GRID_GAP  = 3
 const ITEM_SIZE = (width - GRID_PAD * 2 - GRID_GAP * 4) / 5
+// ✅ EQUIP SLOT: ekran genişliğine göre tam oranlı kare
+// Formül: charFrame (kare) yüksekliği = 3 slot + 2×6 gap. Toplam genişlik = 24 pad + 16 gap + 2 slotW + charFrameW
+// Eşitlik: charFrame.W = 3×slotW + 12, ve charFrame.W = width - 40 - 2×slotW → slotW = (width - 52) / 5
+const SLOT_SIZE = Math.floor((width - 52) / 5)
 
 const RARITIES: Rarity[] = ['Common','Uncommon','Rare','Epic','Legendary','Dimensional']
 const RARITY_ORDER: Record<Rarity, number> = {
@@ -55,6 +61,8 @@ const AFFIX_NAMES: Record<string, string> = {
 }
 const CLASS_AVATARS: Record<string, any> = {
   vanguard: require('../../assets/images/vanguard.png'),
+  riftmage: require('../../assets/images/riftmage.png'),
+  phantom:  require('../../assets/images/phantom.png'),
 }
 const SWORD_IMAGES: Record<string, any> = {
   Common:      require('../../assets/swords/sword_common.png'),
@@ -63,6 +71,14 @@ const SWORD_IMAGES: Record<string, any> = {
   Epic:        require('../../assets/swords/sword_epic.png'),
   Legendary:   require('../../assets/swords/sword_legendary.png'),
   Dimensional: require('../../assets/swords/sword_dimensional.png'),
+}
+const SWORD_IMAGES_BG: Record<string, any> = {
+  Common:      require('../../assets/swords/sword_common_bg.png'),
+  Uncommon:    require('../../assets/swords/sword_uncommon_bg.png'),
+  Rare:        require('../../assets/swords/sword_rare_bg.png'),
+  Epic:        require('../../assets/swords/sword_epic_bg.png'),
+  Legendary:   require('../../assets/swords/sword_legendary_bg.png'),
+  Dimensional: require('../../assets/swords/sword_dimensional_bg.png'),
 }
 const RARITY_BG: Record<string, string> = {
   Common:      'rgba(160,160,160,0.10)',
@@ -74,8 +90,8 @@ const RARITY_BG: Record<string, string> = {
 }
 
 // ─── EQUIPMENT SLOT ──────────────────────────────────────────────────────────
-function EquipSlot({ slotType, item, onPress }: {
-  slotType: string; item: any | null; onPress: () => void
+function EquipSlot({ slotType, item, onPress, classType }: {
+  slotType: string; item: any | null; onPress: () => void; classType?: string
 }) {
   const rc        = item ? RARITY_COLORS[item.rarity as Rarity] : 'rgba(255,255,255,0.08)'
   const pulseAnim = useRef(new Animated.Value(0.4)).current
@@ -92,19 +108,27 @@ function EquipSlot({ slotType, item, onPress }: {
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.75} style={styles.slotWrap}>
       <View style={[styles.slot, { borderColor: rc, backgroundColor: item ? RARITY_BG[item.rarity] || 'transparent' : 'rgba(255,255,255,0.03)' }]}>
-        {item && <Animated.View style={[styles.slotGlow, { borderColor: rc, opacity: pulseAnim }]} />}
+        {!!(item) && <Animated.View style={[styles.slotGlow, { borderColor: rc, opacity: pulseAnim }]} />}
         {item ? (
           <>
-            {item.item_type === 'sword' && SWORD_IMAGES[item.rarity]
-              ? <Image source={SWORD_IMAGES[item.rarity]} style={styles.slotSwordImg} resizeMode="contain" />
-              : <Text style={styles.slotIcon}>{SLOT_ICONS[slotType]}</Text>
-            }
-            <Text style={styles.slotLevel}>L{item.level}</Text>
+            {/* Görsel — tam slot'u doldurur */}
+            {(() => {
+              if (item.item_type === 'sword' && SWORD_IMAGES_BG[item.rarity]) {
+                return <Image source={SWORD_IMAGES_BG[item.rarity]} style={styles.slotSwordImg} resizeMode="contain" />
+              }
+              const classImg = getItemImage(classType, item.item_type)
+              if (classImg) {
+                return <Image source={classImg} style={styles.slotItemImg} resizeMode="cover" />
+              }
+              return <Text style={styles.slotIcon}>{SLOT_ICONS[slotType]}</Text>
+            })()}
+            {/* Badge'ler — absolute, görsel üstünde */}
             {item.enhancement_level > 0 && (
               <View style={styles.slotEnhBadge}>
                 <Text style={styles.slotEnhText}>+{item.enhancement_level}</Text>
               </View>
             )}
+            <Text style={styles.slotLevel}>L{item.level}</Text>
           </>
         ) : (
           <>
@@ -241,7 +265,7 @@ export default function InventoryScreen() {
     setLoading(true)
     const result = await equipItem(userId, item.id)
     if (result?.success) { await loadData(); setSelectedItem(null) }
-    else Alert.alert('Error', 'Failed to equip')
+    else ThemedAlert.alert('Error', 'Failed to equip')
     setLoading(false)
   }
 
@@ -250,7 +274,7 @@ export default function InventoryScreen() {
     setLoading(true)
     const result = await unequipItem(userId, item.id)
     if (result?.success) { await loadData(); setSelectedItem(null) }
-    else Alert.alert('Error', 'Failed to unequip')
+    else ThemedAlert.alert('Error', 'Failed to unequip')
     setLoading(false)
   }
 
@@ -260,7 +284,7 @@ export default function InventoryScreen() {
     await autoEquip(userId)
     await loadData()
     setLoading(false)
-    Alert.alert('Done', 'Best items equipped!')
+    ThemedAlert.alert('Done', 'Best items equipped!')
   }
 
   const handleToggleLock = async (item: any) => {
@@ -284,11 +308,11 @@ export default function InventoryScreen() {
     const scrap = materials?.scrap_metal || 0
 
     if (gold < cost.gold) {
-      Alert.alert('Insufficient Gold', `Need ${cost.gold.toLocaleString()} gold, you have ${gold.toLocaleString()}.`)
+      ThemedAlert.alert('Insufficient Gold', `Need ${cost.gold.toLocaleString()} gold, you have ${gold.toLocaleString()}.`)
       return
     }
     if (scrap < cost.scrap) {
-      Alert.alert('Insufficient Scrap', `Need ${cost.scrap} scrap, you have ${scrap}.`)
+      ThemedAlert.alert('Insufficient Scrap', `Need ${cost.scrap} scrap, you have ${scrap}.`)
       return
     }
 
@@ -320,37 +344,113 @@ export default function InventoryScreen() {
   const toggleRarity = (r: Rarity) =>
     setSelectedRarities(prev => prev.includes(r) ? prev.filter(x => x !== r) : [...prev, r])
 
-  const handleDismantle = async () => {
-    if (!userId || !selectedRarities.length) return
-    const toD = items.filter(i => !i.is_equipped && !i.is_locked && selectedRarities.includes(i.rarity))
-    if (!toD.length) { Alert.alert('Nothing to dismantle', 'No unequipped items match.'); return }
-    const scrap = toD.reduce((a, i) => {
-      const s: Record<string,number> = { Common:1,Uncommon:3,Rare:8,Epic:20,Legendary:50,Dimensional:150 }
-      return a + (s[i.rarity] || 0)
-    }, 0)
-    const enhItems = toD.filter(i => i.enhancement_level > 0)
-    Alert.alert(
-      'Dismantle Items',
-      `${toD.length} items  ~${scrap} Scrap${enhItems.length > 0 ? `\n\n${enhItems.length} enhanced item — 70% material refund.` : ''}`,
+  const handleDismantleSingle = async (item: any) => {
+    if (!userId || item.is_locked || item.is_equipped) return
+    const scrapMap: Record<string, number> = { Common: 1, Uncommon: 3, Rare: 8, Epic: 20, Legendary: 50, Dimensional: 150 }
+    const scrap = scrapMap[item.rarity] || 1
+    ThemedAlert.alert(
+      'Dismantle Item',
+      `Dismantle this ${item.rarity} ${item.item_type}?\n+${scrap} Scrap`,
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Dismantle', style: 'destructive', onPress: async () => {
-          setLoading(true)
-          const ids  = toD.map(i => i.id)
-          const maxR = selectedRarities.reduce((m,r) => RARITY_ORDER[r] > RARITY_ORDER[m] ? r : m, selectedRarities[0])
-          const result = await dismantleItems(ids, maxR)
-          await loadData()
-          setShowDismantle(false)
-          if (result?.success) Alert.alert('Done!', `${result.dismantled_count} items dismantled\n+${result.scrap_earned} Scrap${result.gold_returned > 0 ? `\n+${result.gold_returned.toLocaleString()} Gold (enhancement refund)` : ''}`)
-          setLoading(false)
-        }},
+        {
+          text: 'Dismantle',
+          style: 'destructive',
+          onPress: async () => {
+            setLoading(true)
+            try {
+              const result = await dismantleItems([item.id], item.rarity)
+              if (result?.success) {
+                setSelectedItem(null)
+                await loadData()
+                setTimeout(() => {
+                  ThemedAlert.alert('Done!', `+${result.scrap_earned || scrap} Scrap`)
+                }, 100)
+              }
+            } finally {
+              setLoading(false)
+            }
+          }
+        }
       ]
     )
+  }
+
+  const handleDismantle = async () => {
+    try {
+      if (!userId || !selectedRarities.length) return
+      const toD = items.filter((i) => !i.is_equipped && !i.is_locked && selectedRarities.includes(i.rarity))
+
+      // ✅ FIX: Items boş ise modal'ı kapat, sonra alert
+      if (!toD.length) {
+        setShowDismantle(false)
+        setTimeout(() => {
+          ThemedAlert.alert('Nothing to dismantle', 'No unequipped items match.')
+        }, 250)
+        return
+      }
+
+      const scrap = toD.reduce((a, i) => {
+        const s: Record<string, number> = { Common: 1, Uncommon: 3, Rare: 8, Epic: 20, Legendary: 50, Dimensional: 150 }
+        return a + (s[i.rarity] || 0)
+      }, 0)
+      const enhItems = toD.filter((i) => i.enhancement_level > 0)
+      const enhMsg = enhItems.length > 0 ? `\n\n${enhItems.length} enhanced item — 70% material refund.` : ''
+
+      // ✅ FIX: Confirm alert açmadan önce modal'ı kapat
+      setShowDismantle(false)
+      setTimeout(() => {
+        ThemedAlert.alert(
+          'Dismantle Items',
+          `${toD.length} items  ~${scrap} Scrap${enhMsg}`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Dismantle',
+              style: 'destructive',
+              onPress: async () => {
+                try {
+                  setLoading(true)
+                  const ids = toD.map((i) => i.id)
+                  const maxR = selectedRarities.reduce(
+                    (m, r) => (RARITY_ORDER[r] > RARITY_ORDER[m] ? r : m),
+                    selectedRarities[0]
+                  )
+                  const result = await dismantleItems(ids, maxR)
+                  await loadData()
+                  if (result?.success) {
+                    const goldMsg = result.gold_returned > 0
+                      ? `\n+${Number(result.gold_returned).toLocaleString()} Gold (enhancement refund)`
+                      : ''
+                    setTimeout(() => {
+                      ThemedAlert.alert(
+                        'Done!',
+                        `${result.dismantled_count} items dismantled\n+${result.scrap_earned} Scrap${goldMsg}`
+                      )
+                    }, 100)
+                  }
+                } catch (err) {
+                  console.warn('[handleDismantle] inner error:', err)
+                } finally {
+                  setLoading(false)
+                }
+              },
+            },
+          ]
+        )
+      }, 250)
+    } catch (err) {
+      console.warn('[handleDismantle] outer error:', err)
+    }
   }
 
   // ─── Derived ─────────────────────────────────────────────────────────────
   const equippedMap: Record<string, any> = {}
   items.filter(i => i.is_equipped).forEach(i => { equippedMap[i.item_type] = i })
+
+  const dismantleableCount = items.filter(
+    (i) => !i.is_equipped && !i.is_locked && selectedRarities.includes(i.rarity)
+  ).length
 
   const bagItems = [...items.filter(i => !i.is_equipped)].sort((a, b) =>
     sortBy === 'power'
@@ -397,7 +497,7 @@ export default function InventoryScreen() {
       <View style={styles.equipSection}>
         <View style={styles.nameRow}>
           <Text style={styles.charName}>{player?.username || '-'}</Text>
-          {classInfo && (
+          {!!(classInfo) && (
             <Text style={[styles.charClass, { color: classInfo.color }]}>
               {classInfo.icon} {String(classInfo.name).toUpperCase()}  •  LV {player?.level}
             </Text>
@@ -405,20 +505,20 @@ export default function InventoryScreen() {
         </View>
         <View style={styles.equipMain}>
           <View style={styles.slotCol}>
-            <EquipSlot slotType="sword"    item={equippedMap['sword']    || null} onPress={() => equippedMap['sword']    && setSelectedItem(equippedMap['sword'])} />
-            <EquipSlot slotType="necklace" item={equippedMap['necklace'] || null} onPress={() => equippedMap['necklace'] && setSelectedItem(equippedMap['necklace'])} />
-            <EquipSlot slotType="crystal"  item={equippedMap['crystal']  || null} onPress={() => equippedMap['crystal']  && setSelectedItem(equippedMap['crystal'])} />
+            <EquipSlot slotType="sword"    item={equippedMap['sword']    || null} onPress={() => equippedMap['sword']    && setSelectedItem(equippedMap['sword'])}    classType={classType} />
+            <EquipSlot slotType="necklace" item={equippedMap['necklace'] || null} onPress={() => equippedMap['necklace'] && setSelectedItem(equippedMap['necklace'])} classType={classType} />
+            <EquipSlot slotType="crystal"  item={equippedMap['crystal']  || null} onPress={() => equippedMap['crystal']  && setSelectedItem(equippedMap['crystal'])}  classType={classType} />
           </View>
           <View style={[styles.charFrame, { borderColor: classInfo?.color || '#00D4FF' }]}>
             {avatar
-              ? <Image source={avatar} style={styles.charImg} resizeMode="contain" />
+              ? <Image source={avatar} style={styles.charImg} resizeMode="cover" />
               : <Text style={styles.charEmoji}>{classInfo?.icon || '⚔️'}</Text>
             }
           </View>
           <View style={styles.slotCol}>
-            <EquipSlot slotType="helmet" item={equippedMap['helmet'] || null} onPress={() => equippedMap['helmet'] && setSelectedItem(equippedMap['helmet'])} />
-            <EquipSlot slotType="chest"  item={equippedMap['chest']  || null} onPress={() => equippedMap['chest']  && setSelectedItem(equippedMap['chest'])} />
-            <EquipSlot slotType="gloves" item={equippedMap['gloves'] || null} onPress={() => equippedMap['gloves'] && setSelectedItem(equippedMap['gloves'])} />
+            <EquipSlot slotType="helmet" item={equippedMap['helmet'] || null} onPress={() => equippedMap['helmet'] && setSelectedItem(equippedMap['helmet'])} classType={classType} />
+            <EquipSlot slotType="chest"  item={equippedMap['chest']  || null} onPress={() => equippedMap['chest']  && setSelectedItem(equippedMap['chest'])}  classType={classType} />
+            <EquipSlot slotType="gloves" item={equippedMap['gloves'] || null} onPress={() => equippedMap['gloves'] && setSelectedItem(equippedMap['gloves'])} classType={classType} />
           </View>
         </View>
       </View>
@@ -496,16 +596,22 @@ export default function InventoryScreen() {
                 onLongPress={() => handleToggleLock(item)}
                 activeOpacity={0.75}
               >
-                {item.is_locked && <Text style={styles.itemLock}>🔒</Text>}
+                {!!(item.is_locked) && <Text style={styles.itemLock}>🔒</Text>}
                 {item.enhancement_level > 0 && (
                   <View style={[styles.itemEnhBadge, { backgroundColor: rc + '33', borderColor: rc + '80' }]}>
                     <Text style={[styles.itemEnhText, { color: rc }]}>+{item.enhancement_level}</Text>
                   </View>
                 )}
-                {item.item_type === 'sword' && SWORD_IMAGES[item.rarity]
-                  ? <Image source={SWORD_IMAGES[item.rarity]} style={styles.itemSwordImg} resizeMode="contain" />
-                  : <Text style={styles.itemIcon}>{SLOT_ICONS[item.item_type] || '?'}</Text>
-                }
+                {(() => {
+                  if (item.item_type === 'sword' && SWORD_IMAGES_BG[item.rarity]) {
+                    return <Image source={SWORD_IMAGES_BG[item.rarity]} style={styles.itemSwordImg} resizeMode="cover" />
+                  }
+                  const classImg = getItemImage(classType, item.item_type)
+                  if (classImg) {
+                    return <Image source={classImg} style={styles.itemClassImg} resizeMode="cover" />
+                  }
+                  return <Text style={styles.itemIcon}>{SLOT_ICONS[item.item_type] || '?'}</Text>
+                })()}
                 <Text style={styles.itemLevel}>L{item.level}</Text>
               </TouchableOpacity>
             )
@@ -546,10 +652,10 @@ export default function InventoryScreen() {
         </ScrollView>
       )}
 
-      {/* ─── ITEM DETAIL MODAL ──────────────────────────────────────────────── */}
+      {/* ─── ITEM DETAIL MODAL — HORIZONTAL LAYOUT ────────────────────────── */}
       <Modal visible={!!selectedItem} transparent animationType="slide" onRequestClose={() => setSelectedItem(null)}>
         <View style={styles.overlay}>
-          {selectedItem && (() => {
+          {!!(selectedItem) && (() => {
             const rc         = RARITY_COLORS[selectedItem.rarity as Rarity]
             const oldItem    = equippedSameSlot
             const isCompare  = !!oldItem && !selectedItem.is_equipped
@@ -563,101 +669,143 @@ export default function InventoryScreen() {
               ? (materials?.gold || 0) >= nextCost.gold && (materials?.scrap_metal || 0) >= nextCost.scrap
               : false
 
-            return (
-              <View style={[styles.modalBox, { borderColor: rc + '80' }]}>
-                {/* Header */}
-                <View style={[styles.mHead, { backgroundColor: rc + '18' }]}>
-                  <View style={styles.mHeadLeft}>
-                    <Text style={styles.mSlotIcon}>{SLOT_ICONS[selectedItem.item_type]}</Text>
-                    <View>
-                      <Text style={[styles.mRarityText, { color: rc }]}>{selectedItem.rarity.toUpperCase()}</Text>
-                      <Text style={styles.mSlotType}>
-                        {selectedItem.item_type.toUpperCase()}  •  LV {selectedItem.level}
-                        {selectedItem.enhancement_level > 0 && (
-                          <Text style={{ color: rc }}> +{selectedItem.enhancement_level}</Text>
-                        )}
-                      </Text>
+            const calcEnh = (val: number, lvl: number) => Math.floor(val * (1 + enhStatPct(lvl) / 100))
+
+            const renderImg = (item: any, imgStyle: any, fallbackStyle: any) => {
+              if (item.item_type === 'sword' && SWORD_IMAGES_BG[item.rarity]) {
+                return <Image source={SWORD_IMAGES_BG[item.rarity]} style={imgStyle} resizeMode="cover" />
+              }
+              const ci = getItemImage(classType, item.item_type)
+              if (ci) return <Image source={ci} style={imgStyle} resizeMode="cover" />
+              return <Text style={fallbackStyle}>{SLOT_ICONS[item.item_type]}</Text>
+            }
+
+            // ─── HORIZONTAL ITEM CARD: sol görsel kare + sağ stat listesi ───
+            const renderItemCard = (item: any, tag: 'EQUIPPED' | 'NEW' | null, color: string) => {
+              const enhLvl = item.enhancement_level
+              const itemCap = ENH_CAP[item.rarity] || 0
+              const itemMaxEnh = enhLvl >= itemCap
+
+              return (
+                <View style={[styles.hCard, { borderColor: color + '80' }]}>
+                  {/* Tag (EQUIPPED / NEW) */}
+                  {!!(tag) && (
+                    <View style={[styles.hCardTag, { backgroundColor: color + '20', borderColor: color + '60' }]}>
+                      <Text style={[styles.hCardTagText, { color }]}>{tag}</Text>
+                    </View>
+                  )}
+
+                  <View style={styles.hCardBody}>
+                    {/* SOL: Kare görsel */}
+                    <View style={[styles.hImgFrame, { borderColor: color + '60' }]}>
+                      {renderImg(item, styles.hImg, styles.hFallback)}
+                      <View style={styles.hEnhBadge}>
+                        <Text style={[styles.hEnhText, { color: enhLvl > 0 ? '#FFD700' : 'rgba(255,255,255,0.5)' }]}>
+                          +{enhLvl}
+                        </Text>
+                      </View>
+                      {!!(item.is_locked) && (
+                        <View style={styles.hLockBadge}>
+                          <Text style={styles.hLockText}>🔒</Text>
+                        </View>
+                      )}
+                      <Text style={styles.hLvl}>L{item.level}</Text>
+                    </View>
+
+                    {/* SAĞ: Stat listesi */}
+                    <View style={styles.hStats}>
+                      {item.base_attack != null && (() => {
+                        const cur = calcEnh(item.base_attack, enhLvl)
+                        const max = calcEnh(item.base_attack, itemCap)
+                        return (
+                          <View style={styles.hStatRow}>
+                            <Text style={styles.hStatLbl}>BASE ATK</Text>
+                            <View style={styles.hStatValWrap}>
+                              <Text style={[styles.hStatVal, { color }]}>+{cur}</Text>
+                              {!itemMaxEnh && cur !== max && (
+                                <Text style={styles.hStatPreview}>+{max} @+{itemCap}</Text>
+                              )}
+                            </View>
+                          </View>
+                        )
+                      })()}
+                      {(item.item_affixes || []).map((a: any, i: number) => {
+                        const isPct = PERCENT_AFFIXES.includes(a.affix_type)
+                        const cur = calcEnh(a.value, enhLvl)
+                        const max = calcEnh(a.value, itemCap)
+                        const fmt = (v: number) => isPct ? `${v}%` : `+${v}`
+                        return (
+                          <View key={i} style={styles.hStatRow}>
+                            <Text style={styles.hStatLbl}>{AFFIX_NAMES[a.affix_type] || a.affix_type}</Text>
+                            <View style={styles.hStatValWrap}>
+                              <Text style={[styles.hStatVal, { color }]}>{fmt(cur)}</Text>
+                              {!itemMaxEnh && cur !== max && (
+                                <Text style={styles.hStatPreview}>{fmt(max)} @+{itemCap}</Text>
+                              )}
+                            </View>
+                          </View>
+                        )
+                      })}
+                      {/* Power */}
+                      <View style={[styles.hStatRow, styles.hPwrRow]}>
+                        <Text style={styles.hPwrLbl}>⚡ POWER</Text>
+                        <Text style={[styles.hPwrVal, { color }]}>{item.power_score}</Text>
+                      </View>
                     </View>
                   </View>
+                </View>
+              )
+            }
+
+            return (
+              <View style={[styles.modalBox, { borderColor: rc + '80' }]}>
+                {/* COMPACT HEADER */}
+                <View style={styles.mHead2}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.mHeadName, { color: rc }]}>
+                      {selectedItem.rarity.toUpperCase()}
+                    </Text>
+                    <Text style={styles.mHeadMeta}>
+                      {selectedItem.item_type.toUpperCase()}  •  LV {selectedItem.level}
+                    </Text>
+                  </View>
+                  {!!(isCompare) && pwrDiff !== 0 && (
+                    <View style={[styles.diffPill, {
+                      backgroundColor: isUpgrade ? '#00FF8820' : '#FF444420',
+                      borderColor:     isUpgrade ? '#00FF88'   : '#FF4444',
+                    }]}>
+                      <Text style={[styles.diffPillText, { color: isUpgrade ? '#00FF88' : '#FF4444' }]}>
+                        {isUpgrade ? '▲' : '▼'} {isUpgrade ? '+' : ''}{pwrDiff}
+                      </Text>
+                    </View>
+                  )}
                   <TouchableOpacity onPress={() => setSelectedItem(null)} style={styles.mClose}>
                     <Text style={styles.mCloseText}>✕</Text>
                   </TouchableOpacity>
                 </View>
 
-                <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: height * 0.55 }}>
+                <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: height * 0.65 }}>
                   {isCompare ? (
-                    <>
-                      <View style={styles.cCards}>
-                        <View style={[styles.cCard, { borderColor: RARITY_COLORS[oldItem.rarity as Rarity] + '60' }]}>
-                          <Text style={styles.cCardTag}>EQUIPPED</Text>
-                          <Text style={styles.cCardIcon}>{SLOT_ICONS[oldItem.item_type]}</Text>
-                          <Text style={[styles.cCardRarity, { color: RARITY_COLORS[oldItem.rarity as Rarity] }]}>{oldItem.rarity.toUpperCase()}</Text>
-                          <Text style={styles.cCardPwr}>{oldItem.power_score}</Text>
-                        </View>
-                        <View style={styles.cVerdict}>
-                          <Text style={styles.cVerdictArrow}>{isUpgrade ? '▶' : '◀'}</Text>
-                          <View style={[styles.cVerdictBadge, { backgroundColor: isUpgrade ? '#00FF8820' : '#FF444420', borderColor: isUpgrade ? '#00FF88' : '#FF4444' }]}>
-                            <Text style={[styles.cVerdictText, { color: isUpgrade ? '#00FF88' : '#FF4444' }]}>{isUpgrade ? 'UPGRADE' : 'DOWNGRADE'}</Text>
-                            <Text style={[styles.cVerdictDiff, { color: isUpgrade ? '#00FF88' : '#FF4444' }]}>{isUpgrade ? '+' : ''}{pwrDiff}</Text>
-                          </View>
-                        </View>
-                        <View style={[styles.cCard, { borderColor: rc + '80', backgroundColor: rc + '08' }]}>
-                          <Text style={[styles.cCardTag, { color: rc }]}>NEW</Text>
-                          <Text style={styles.cCardIcon}>{SLOT_ICONS[selectedItem.item_type]}</Text>
-                          <Text style={[styles.cCardRarity, { color: rc }]}>{selectedItem.rarity.toUpperCase()}</Text>
-                          <Text style={[styles.cCardPwr, { color: rc }]}>{selectedItem.power_score}</Text>
-                        </View>
-                      </View>
-                      <View style={styles.cStats}>
-                        <View style={styles.cStatsHeader}>
-                          <Text style={[styles.cStatLabel, { flex: 1 }]}>STAT</Text>
-                          <Text style={styles.cStatOldH}>EQUIPPED</Text>
-                          <Text style={styles.cStatNewH}>NEW</Text>
-                          <Text style={styles.cStatDiffH}>Δ</Text>
-                        </View>
-                        {selectedItem.base_attack != null && (
-                          <CompareRow label="BASE ATK" oldVal={oldItem.base_attack || 0} newVal={selectedItem.base_attack || 0} isPercent={false} newColor={rc} />
-                        )}
-                        {allAffixTypes.map((t: string) => (
-                          <CompareRow key={t} label={AFFIX_NAMES[t] || t} oldVal={getAffix(oldItem, t)} newVal={getAffix(selectedItem, t)} isPercent={PERCENT_AFFIXES.includes(t)} newColor={rc} />
-                        ))}
-                        <View style={styles.cPowerRow}>
-                          <Text style={styles.cPowerLabel}>⚡ POWER</Text>
-                          <Text style={styles.cPowerOld}>{oldItem.power_score}</Text>
-                          <Text style={[styles.cPowerNew, { color: rc }]}>{selectedItem.power_score}</Text>
-                          <Text style={[styles.cPowerDiff, { color: isUpgrade ? '#00FF88' : '#FF4444' }]}>{isUpgrade ? '▲' : '▼'} {Math.abs(pwrDiff)}</Text>
-                        </View>
-                      </View>
-                    </>
+                    /* ━━━ COMPARE MODE — 2 horizontal kart üst üste ━━━ */
+                    <View style={styles.cardsCol}>
+                      {/* Üstte EQUIPPED (giyili olan) */}
+                      {renderItemCard(oldItem, 'EQUIPPED', RARITY_COLORS[oldItem.rarity as Rarity])}
+                      {/* Altta NEW (yeni) */}
+                      {renderItemCard(selectedItem, 'NEW', rc)}
+                    </View>
                   ) : (
-                    <>
-                      {selectedItem.is_equipped && (
-                        <View style={[styles.equippedBanner, { borderColor: rc + '60' }]}>
-                          <Text style={[styles.equippedBannerText, { color: rc }]}>✓ CURRENTLY EQUIPPED</Text>
+                    /* ━━━ SINGLE MODE ━━━ */
+                    <View style={styles.cardsCol}>
+                      {!!(selectedItem.is_equipped) && (
+                        <View style={[styles.equippedTag, { borderColor: rc + '60', backgroundColor: rc + '12' }]}>
+                          <Text style={[styles.equippedTagTxt, { color: rc }]}>✓ CURRENTLY EQUIPPED</Text>
                         </View>
                       )}
-                      <View style={styles.singleStats}>
-                        {selectedItem.base_attack != null && (
-                          <View style={styles.singleStatRow}>
-                            <Text style={styles.singleStatLabel}>BASE ATK</Text>
-                            <Text style={[styles.singleStatVal, { color: rc }]}>{selectedItem.base_attack}</Text>
-                          </View>
-                        )}
-                        {(selectedItem.item_affixes || []).map((a: any, i: number) => (
-                          <View key={i} style={styles.singleStatRow}>
-                            <Text style={styles.singleStatLabel}>{AFFIX_NAMES[a.affix_type] || a.affix_type}</Text>
-                            <Text style={[styles.singleStatVal, { color: rc }]}>{fmtAffix(a.affix_type, a.value)}</Text>
-                          </View>
-                        ))}
-                        <View style={[styles.singleStatRow, styles.singlePowerRow]}>
-                          <Text style={styles.singlePowerLabel}>⚡ POWER SCORE</Text>
-                          <Text style={[styles.singlePowerVal, { color: rc }]}>{selectedItem.power_score}</Text>
-                        </View>
-                      </View>
-                    </>
+                      {renderItemCard(selectedItem, null, rc)}
+                    </View>
                   )}
 
-                  {/* ✅ ENHANCEMENT */}
+                  {/* ENHANCEMENT — kompakt */}
                   <View style={[styles.enhSection, { borderColor: rc + '30' }]}>
                     <View style={styles.enhHeader}>
                       <Text style={styles.enhTitle}>ENHANCEMENT</Text>
@@ -667,7 +815,6 @@ export default function InventoryScreen() {
                       </Text>
                     </View>
 
-                    {/* Enhancement bar */}
                     <View style={styles.enhBar}>
                       {Array.from({ length: cap }, (_, i) => (
                         <View
@@ -704,7 +851,7 @@ export default function InventoryScreen() {
                 </ScrollView>
 
                 {/* FLOATING TOAST */}
-                {floatMsg && (
+                {!!(floatMsg) && (
                   <View style={styles.floatToastWrap} pointerEvents="none">
                     <FloatingToast
                       msg={floatMsg.msg}
@@ -742,12 +889,22 @@ export default function InventoryScreen() {
                       disabled={loading}
                     >
                       <Text style={[styles.mEquipBtnText, { color: rc }]}>
-                        {loading ? '...' : isCompare && isUpgrade ? '⚡ EQUIP — UPGRADE' : '⚡ EQUIP'}
+                        {loading ? '...' : '⚡ EQUIP'}
                       </Text>
                     </TouchableOpacity>
                   ) : (
                     <TouchableOpacity style={[styles.mUnequipBtn, { flex: 1 }]} onPress={() => handleUnequip(selectedItem)} disabled={loading}>
                       <Text style={styles.mUnequipBtnText}>{loading ? '...' : 'UNEQUIP'}</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {!selectedItem.is_locked && !selectedItem.is_equipped && selectedItem.enhancement_level === 0 && (
+                    <TouchableOpacity
+                      style={styles.mDismantleBtn}
+                      onPress={() => handleDismantleSingle(selectedItem)}
+                      disabled={loading}
+                    >
+                      <Text style={styles.mDismantleBtnText}>🗑️</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -757,49 +914,73 @@ export default function InventoryScreen() {
         </View>
       </Modal>
 
-      {/* DISMANTLE MODAL */}
-      <Modal visible={showDismantle} transparent animationType="slide" onRequestClose={() => setShowDismantle(false)}>
+
+      {/* DISMANTLE MODAL — MİNİMAL VERSION (debug için) */}
+      <Modal visible={showDismantle} transparent animationType="fade" onRequestClose={() => setShowDismantle(false)}>
         <View style={styles.dismantleOverlay}>
           <View style={styles.dismantleBox}>
             <View style={styles.dismantleHeader}>
               <Text style={styles.dismantleTitle}>DISMANTLE</Text>
               <TouchableOpacity onPress={() => setShowDismantle(false)}>
-                <Text style={styles.mCloseText}>✕</Text>
+                <Text style={styles.mCloseText}>X</Text>
               </TouchableOpacity>
             </View>
-            <Text style={styles.dismantleHint}>Equipped & locked items are safe. Enhanced items return 70% of materials.</Text>
+
+            <Text style={styles.dismantleHint}>Equipped and locked items are safe.</Text>
+
             <View style={styles.rarityGrid}>
-              {RARITIES.map(r => {
-                const rc  = RARITY_COLORS[r]
+              {RARITIES.map((r) => {
+                const rc = RARITY_COLORS[r] || '#888'
                 const sel = selectedRarities.includes(r)
-                const cnt = items.filter(i => !i.is_equipped && i.rarity === r).length
+                const cnt = items.filter((i) => !i.is_equipped && i.rarity === r).length
                 return (
                   <TouchableOpacity
-                    key={r}
-                    style={[styles.rarityChip, sel && { borderColor: rc, backgroundColor: rc + '20' }]}
+                    key={String(r)}
+                    style={[styles.rarityChip, sel ? { borderColor: rc, backgroundColor: rc + '20' } : null]}
                     onPress={() => toggleRarity(r)}
                   >
-                    <Text style={[styles.rarityChipTxt, { color: sel ? rc : 'rgba(255,255,255,0.35)' }]}>{r.slice(0,3).toUpperCase()}</Text>
-                    <Text style={[styles.rarityChipCnt, { color: sel ? rc : 'rgba(255,255,255,0.25)' }]}>{cnt}</Text>
+                    <Text style={[styles.rarityChipTxt, { color: sel ? rc : 'rgba(255,255,255,0.35)' }]}>
+                      {String(r).slice(0, 3).toUpperCase()}
+                    </Text>
+                    <Text style={[styles.rarityChipCnt, { color: sel ? rc : 'rgba(255,255,255,0.25)' }]}>
+                      {String(cnt)}
+                    </Text>
                   </TouchableOpacity>
                 )
               })}
             </View>
+
             <View style={styles.dismantleSummary}>
-              <Text style={styles.dSumTxt}>{items.filter(i => !i.is_equipped && selectedRarities.includes(i.rarity)).length} items</Text>
+              <Text style={styles.dSumTxt}>
+                {String(items.filter((i) => !i.is_equipped && selectedRarities.includes(i.rarity)).length)} items
+              </Text>
               <Text style={styles.dSumScrap}>
-                ~{items.filter(i => !i.is_equipped && selectedRarities.includes(i.rarity)).reduce((a,i) => {
-                  const s: Record<string,number> = { Common:1,Uncommon:3,Rare:8,Epic:20,Legendary:50,Dimensional:150 }
-                  return a + (s[i.rarity]||0)
-                }, 0)} Scrap
+                ~{String(
+                  items
+                    .filter((i) => !i.is_equipped && selectedRarities.includes(i.rarity))
+                    .reduce((a, i) => {
+                      const s: Record<string, number> = { Common: 1, Uncommon: 3, Rare: 8, Epic: 20, Legendary: 50, Dimensional: 150 }
+                      return a + (s[i.rarity] || 0)
+                    }, 0)
+                )} Scrap
               </Text>
             </View>
+
             <TouchableOpacity
-              style={[styles.dismantleBtn, !selectedRarities.length && { opacity: 0.4 }]}
+              style={[
+                styles.dismantleBtn,
+                (!selectedRarities.length || dismantleableCount === 0) ? { opacity: 0.4 } : null,
+              ]}
               onPress={handleDismantle}
-              disabled={loading || !selectedRarities.length}
+              disabled={loading || !selectedRarities.length || dismantleableCount === 0}
             >
-              <Text style={styles.dismantleBtnTxt}>{loading ? 'DISMANTLING...' : 'DISMANTLE ALL'}</Text>
+              <Text style={styles.dismantleBtnTxt}>
+                {loading
+                  ? 'DISMANTLING...'
+                  : dismantleableCount === 0
+                  ? 'NO ITEMS TO DISMANTLE'
+                  : 'DISMANTLE ' + String(dismantleableCount)}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -819,23 +1000,25 @@ const styles = StyleSheet.create({
   pwrValue:    { fontSize: 15, fontWeight: '900', color: '#FFD700' },
 
   equipSection: { backgroundColor: 'rgba(0,8,18,0.7)', borderTopWidth:1, borderBottomWidth:1, borderColor:'rgba(0,212,255,0.12)', paddingTop:8, paddingBottom:10, paddingHorizontal:12 },
-  nameRow:   { alignItems: 'center', marginBottom: 8 },
-  charName:  { fontSize: 14, fontWeight: '900', color: '#fff', letterSpacing: 2 },
-  charClass: { fontSize: 10, fontWeight: '700', letterSpacing: 2, marginTop: 2 },
-  equipMain: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  nameRow:   { flexDirection: 'row', alignItems: 'baseline', gap: 8, marginBottom: 6 },
+  charName:  { fontSize: 16, fontWeight: '900', color: '#fff', letterSpacing: 2 },
+  charClass: { fontSize: 11, fontWeight: '700', letterSpacing: 1.5 },
+  equipMain: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   slotCol:   { gap: 6 },
-  charFrame: { flex: 1, marginHorizontal: 8, aspectRatio: 0.75, borderWidth: 1.5, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.03)', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  // ✅ charFrame: TAM KARE — flex ile dinamik genişlik, aspectRatio: 1 ile yükseklik = genişlik
+  charFrame: { flex: 1, aspectRatio: 1, borderWidth: 1.5, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.03)', overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   charImg:   { width: '100%', height: '100%' },
   charEmoji: { fontSize: 52 },
-  slot:      { width: 72, height: 72, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderRadius: 8, alignItems: 'center', justifyContent: 'center', gap: 2, position: 'relative', overflow: 'hidden' },
+  slot:      { width: SLOT_SIZE, height: SLOT_SIZE, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderRadius: 8, alignItems: 'center', justifyContent: 'center', gap: 2, position: 'relative', overflow: 'hidden' },
   slotWrap:  {},
   slotIcon:  { fontSize: 22 },
-  slotLevel: { position: 'absolute', bottom: 3, right: 4, fontSize: 9, color: 'rgba(255,255,255,0.5)', fontWeight: '700' },
+  slotLevel: { position: 'absolute', bottom: 2, right: 3, fontSize: 8, color: 'rgba(255,255,255,0.8)', fontWeight: '800', zIndex: 2, textShadowColor: 'rgba(0,0,0,0.9)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
   slotEmpty: { fontSize: 7, color: 'rgba(255,255,255,0.2)', letterSpacing: 0.5, marginTop: 2 },
   slotGlow:  { position: 'absolute', top: -2, left: -2, right: -2, bottom: -2, borderRadius: 10, borderWidth: 2 },
-  slotSwordImg: { width: 36, height: 36 },
-  slotEnhBadge: { position: 'absolute', top: 2, left: 3, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 3, paddingHorizontal: 3, paddingVertical: 1 },
-  slotEnhText:  { fontSize: 9, fontWeight: '900', color: '#FFD700' },
+  slotSwordImg: { width: 60, height: 60 },
+  slotItemImg:  { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' },
+  slotEnhBadge: { position: 'absolute', top: 2, left: 2, backgroundColor: 'rgba(0,0,0,0.75)', borderRadius: 3, paddingHorizontal: 3, paddingVertical: 1, zIndex: 2 },
+  slotEnhText:  { fontSize: 8, fontWeight: '900', color: '#FFD700' },
 
   statStrip:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', paddingVertical: 8, paddingHorizontal: 12, backgroundColor: 'rgba(0,4,12,0.95)', borderBottomWidth: 1, borderBottomColor: 'rgba(0,212,255,0.1)' },
   statChip:      { alignItems: 'center', flex: 1 },
@@ -862,9 +1045,10 @@ const styles = StyleSheet.create({
   // Item grid
   grid:          { padding: GRID_PAD, paddingBottom: 100 },
   gridRow:       { gap: GRID_GAP, marginBottom: GRID_GAP },
-  itemCard:      { width: ITEM_SIZE, height: ITEM_SIZE + 8, borderWidth: 1, borderRadius: 6, alignItems: 'center', justifyContent: 'center', gap: 2, overflow: 'hidden', position: 'relative' },
+  itemCard:      { width: ITEM_SIZE, height: ITEM_SIZE, borderWidth: 1, borderRadius: 6, alignItems: 'center', justifyContent: 'center', gap: 2, overflow: 'hidden', position: 'relative' },
   itemLock:      { position: 'absolute', top: 2, left: 3, fontSize: 10, zIndex: 2 },
-  itemSwordImg:  { width: ITEM_SIZE - 8, height: ITEM_SIZE - 16 },
+  itemSwordImg:  { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' },
+  itemClassImg:  { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' },
   itemIcon:      { fontSize: 22 },
   itemLevel:     { position: 'absolute', bottom: 3, right: 4, fontSize: 9, color: 'rgba(255,255,255,0.5)', fontWeight: '700' },
   itemEnhBadge:  { position: 'absolute', top: 2, right: 2, borderWidth: 1, borderRadius: 3, paddingHorizontal: 3, paddingVertical: 1 },
@@ -896,6 +1080,8 @@ const styles = StyleSheet.create({
   mHead:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14 },
   mHeadLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   mSlotIcon: { fontSize: 32 },
+  mSlotImg:  { width: 36, height: 36 },
+  cCardImg:  { width: 32, height: 32, marginVertical: 4 },
   mRarityText:{ fontSize: 18, fontWeight: '900', letterSpacing: 2 },
   mSlotType:  { fontSize: 11, color: 'rgba(255,255,255,0.5)', letterSpacing: 1, marginTop: 2 },
   mClose:    { padding: 8 },
@@ -988,4 +1174,45 @@ const styles = StyleSheet.create({
   dSumScrap:        { fontSize: 14, fontWeight: '700', color: '#FFD700' },
   dismantleBtn:     { backgroundColor: '#FF4444', borderRadius: 4, padding: 14, alignItems: 'center' },
   dismantleBtnTxt:  { fontSize: 14, fontWeight: '800', color: '#fff', letterSpacing: 2 },
+
+  // ━━━ HORIZONTAL CARD MODAL STYLES ━━━
+  mHead2:        { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)', gap: 8 },
+  mHeadName:     { fontSize: 22, fontWeight: '900', letterSpacing: 3 },
+  mHeadMeta:     { fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 3, letterSpacing: 1.5 },
+  diffPill:      { borderWidth: 1.5, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 5 },
+  diffPillText:  { fontSize: 12, fontWeight: '900', letterSpacing: 1 },
+
+  cardsCol:      { paddingHorizontal: 14, paddingTop: 14, gap: 10 },
+
+  // Horizontal card
+  hCard:         { borderWidth: 1.5, borderRadius: 12, padding: 10, paddingTop: 14, backgroundColor: 'rgba(255,255,255,0.02)', position: 'relative' },
+  hCardTag:      { position: 'absolute', top: -10, left: 14, borderWidth: 1.5, borderRadius: 4, paddingHorizontal: 8, paddingVertical: 2, zIndex: 3, backgroundColor: '#060F1E' },
+  hCardTagText:  { fontSize: 9, fontWeight: '900', letterSpacing: 2 },
+  hCardBody:     { flexDirection: 'row', gap: 12, alignItems: 'center' },
+  // Sol görsel
+  hImgFrame:     { width: 110, height: 110, borderWidth: 1, borderRadius: 8, overflow: 'hidden', backgroundColor: 'rgba(0,0,0,0.4)', position: 'relative' },
+  hImg:          { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' },
+  hFallback:     { fontSize: 60, textAlign: 'center', lineHeight: 110 },
+  hEnhBadge:     { position: 'absolute', top: 4, left: 4, backgroundColor: 'rgba(0,0,0,0.75)', borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1, zIndex: 2 },
+  hEnhText:      { fontSize: 11, fontWeight: '900' },
+  hLockBadge:    { position: 'absolute', top: 4, right: 4, zIndex: 2 },
+  hLockText:     { fontSize: 12 },
+  hLvl:          { position: 'absolute', bottom: 4, right: 6, fontSize: 11, color: '#fff', fontWeight: '900', zIndex: 2, textShadowColor: 'rgba(0,0,0,0.9)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
+  // Sağ stat
+  hStats:        { flex: 1, gap: 2 },
+  hStatRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 3 },
+  hStatLbl:      { fontSize: 11, color: 'rgba(255,255,255,0.6)', fontWeight: '600', letterSpacing: 0.5, flex: 1 },
+  hStatValWrap:  { alignItems: 'flex-end' },
+  hStatVal:      { fontSize: 13, fontWeight: '800' },
+  hStatPreview:  { fontSize: 9, color: 'rgba(255,255,255,0.35)', marginTop: 1 },
+  hPwrRow:       { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)', paddingTop: 6, marginTop: 4, paddingVertical: 4 },
+  hPwrLbl:       { fontSize: 12, fontWeight: '900', color: '#fff', letterSpacing: 1, flex: 1 },
+  hPwrVal:       { fontSize: 16, fontWeight: '900' },
+
+  equippedTag:   { alignSelf: 'center', borderWidth: 1, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 5, marginBottom: 4 },
+  equippedTagTxt:{ fontSize: 10, fontWeight: '900', letterSpacing: 2 },
+
+  // Single dismantle button
+  mDismantleBtn:    { width: 52, height: 52, borderWidth: 1.5, borderRadius: 10, borderColor: '#FF4444', backgroundColor: 'rgba(255,68,68,0.08)', alignItems: 'center', justifyContent: 'center' },
+  mDismantleBtnText:{ fontSize: 22 },
 })

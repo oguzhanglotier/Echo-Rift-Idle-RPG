@@ -12,6 +12,7 @@ import { supabase } from '../lib/supabase'
 import { useGame } from '../hooks/useGame'
 import { COLORS, CLASS_INFO } from '../constants'
 import { ClassType } from '../types'
+import { PlayerActionMenu } from '../components/PlayerActionMenu'
 
 const CORNER = 10
 
@@ -19,7 +20,8 @@ const TABS = [
   { key: 'power',       label: '⚡ POWER' },
   { key: 'arena',       label: '🏆 ARENA' },
   { key: 'dungeon',     label: '⚔️ DUNGEON' },
-  { key: 'all_seasons', label: '🌌 ALL' },
+  { key: 'achievement', label: '🏅 ACHIEVE' },
+  { key: 'champion',    label: '👥 ROSTER' },
 ]
 
 function HoloCard({ children, style, color = '#00D4FF' }: {
@@ -39,6 +41,7 @@ function HoloCard({ children, style, color = '#00D4FF' }: {
 export default function LeaderboardScreen({ navigation }: any) {
   const { getLeaderboard } = useGame()
   const [userId,     setUserId]     = useState<string | null>(null)
+  const [actionMenuPlayer, setActionMenuPlayer] = useState<any | null>(null)
   const [activeTab,  setActiveTab]  = useState('power')
   const [data,       setData]       = useState<any>(null)
   const [refreshing, setRefreshing] = useState(false)
@@ -68,6 +71,8 @@ export default function LeaderboardScreen({ navigation }: any) {
       case 'power':       return `⚡ ${item.power_score?.toLocaleString()}`
       case 'arena':       return `🏆 ${item.arena_points} pts`
       case 'dungeon':     return `⚔️ F${item.max_floor}`
+      case 'achievement': return `🏅 ${item.achievement_count} unlocked`
+      case 'champion':    return `👥 ${item.total_champions} (${item.total_stars}★, ${item.awakened_count}✨)`
       case 'all_seasons': return `🌌 ${item.arena_points} pts`
       default:            return ''
     }
@@ -138,6 +143,11 @@ export default function LeaderboardScreen({ navigation }: any) {
           </View>
         }
         renderItem={({ item }) => (
+          <TouchableOpacity
+            onPress={() => item.player_id !== userId && setActionMenuPlayer(item)}
+            activeOpacity={0.7}
+            disabled={item.player_id === userId}
+          >
           <View style={[styles.rankRow, item.player_id === userId && styles.rankRowMine]}>
             <View style={styles.rankNumCol}>
               {item.rank <= 3
@@ -150,7 +160,7 @@ export default function LeaderboardScreen({ navigation }: any) {
                 {item.username}{item.player_id === userId ? ' (YOU)' : ''}
               </Text>
               <View style={{ flexDirection: 'row', gap: 8, marginTop: 2 }}>
-                {item.class_type && (
+                {!!(item.class_type) && (
                   <Text style={[styles.playerClass, {
                     color: CLASS_INFO[item.class_type as ClassType]?.color || '#fff'
                   }]}>
@@ -164,8 +174,21 @@ export default function LeaderboardScreen({ navigation }: any) {
               {getStatValue(item)}
             </Text>
           </View>
+          </TouchableOpacity>
         )}
       />
+    {!!(actionMenuPlayer) && (
+      <PlayerActionMenu
+        visible={!!actionMenuPlayer}
+        onClose={() => setActionMenuPlayer(null)}
+        targetPlayerId={actionMenuPlayer.player_id}
+        targetUsername={actionMenuPlayer.username}
+        targetClassType={actionMenuPlayer.class_type}
+        targetLevel={actionMenuPlayer.level}
+        navigation={navigation}
+        currentUserId={userId}
+      />
+    )}
     </View>
   )
 }

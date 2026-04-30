@@ -14,6 +14,7 @@ import { useGame } from '../hooks/useGame'
 import { COLORS, CLASS_INFO } from '../constants'
 import { ArenaOpponent, ArenaBattleResult, ClassType } from '../types'
 import ArenaBattleModal from '../components/ArenaBattleModal'
+import { ThemedAlert } from '../components/ThemedAlert'
 
 // ─── STAT ITEM ───────────────────────────────────────────────────────────────
 function StatItem({ label, value }: { label: string; value: number | string }) {
@@ -45,7 +46,7 @@ function OpponentCard({ opponent, playerPower, onFight, isBattling, disabled }: 
         <View style={styles.opponentInfo}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Text style={styles.opponentName}>{opponent.username}</Text>
-            {isBot && (
+            {!!(isBot) && (
               <View style={styles.botBadge}>
                 <Text style={styles.botBadgeText}>BOT</Text>
               </View>
@@ -53,7 +54,7 @@ function OpponentCard({ opponent, playerPower, onFight, isBattling, disabled }: 
           </View>
           <View style={styles.opponentMeta}>
             <Text style={styles.opponentLevel}>Lv.{opponent.level}</Text>
-            {classInfo && (
+            {!!(classInfo) && (
               <Text style={[styles.opponentClass, { color: classInfo.color }]}>
                 {classInfo.icon} {classInfo.name}
               </Text>
@@ -126,7 +127,7 @@ export default function ArenaScreen() {
       : playerState.player.pass_type === 'silver' ? 12 : 10
 
     if (arena.battles_today >= maxBattles) {
-      Alert.alert('Daily Limit Reached', `${maxBattles} battles used today.`)
+      ThemedAlert.alert('Daily Limit Reached', `${maxBattles} battles used today.`)
       return
     }
 
@@ -142,7 +143,7 @@ export default function ArenaScreen() {
           getArenaOpponents(userId),
         ])
       } else {
-        Alert.alert('Error', result?.error || 'Battle failed')
+        ThemedAlert.alert('Error', result?.error || 'Battle failed')
       }
     } finally {
       setBattling(null)

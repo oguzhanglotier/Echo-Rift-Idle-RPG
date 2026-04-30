@@ -710,13 +710,74 @@ export default function ArenaBattleModal({
       if (!isMounted.current || isSkipped.current) break
       const log = r.round_logs[i]
       setRoundNum(i + 1)
-
-      // ✅ Round başında effect tick (turn -1, 0'a düşen kalkar)
+      // ✅ Her round başında effect timer'larını azalt (stun/burn/freeze expire olsun)
       tickEffects(setP1Effects)
       tickEffects(setP2Effects)
 
       // ✅ Bu round'daki champion skills array'ini parse et
       const skillsThisRound = log.champion_skills || []
+      const attackerSkills = skillsThisRound.filter((ev: any) => ev.side === 'attacker' && ev.effect_type !== 'dot_tick' && ev.effect_type !== 'revive')
+      const defenderSkills = skillsThisRound.filter((ev: any) => ev.side === 'defender' && ev.effect_type !== 'dot_tick' && ev.effect_type !== 'revive')
+
+      // ── SKILL HELPER: skill cast oynat + HP güncelle ───────────────────────
+      const playSkillGroup = async (skills: any[]) => {
+        for (const ev of skills) {
+          if (isSkipped.current) break
+          await playSkillCast(ev)
+          if (isSkipped.current) break
+          applyEventToEffects(ev)
+          const skillName = ev.skill_name ?? 'Skill'
+          if (ev.dmg_to_enemy && ev.dmg_to_enemy > 0) {
+            const txt = `✨ ${skillName} -${ev.dmg_to_enemy}`
+            if (ev.side === 'attacker') addLog(txt, '#A855F7', '', '')
+            else                        addLog('', '', txt, '#A855F7')
+            const targetSide = ev.side === 'attacker' ? 'p2' : 'p1'
+            spawnFloat(ev.dmg_to_enemy, false, targetSide, false, `✨ -${ev.dmg_to_enemy}`, '#A855F7', 20)
+            if (ev.side === 'attacker') {
+              p2HpCurrent = Math.max(0, p2HpCurrent - ev.dmg_to_enemy)
+              setP2Hp(p2HpCurrent)
+            } else {
+              p1HpCurrent = Math.max(0, p1HpCurrent - ev.dmg_to_enemy)
+              setP1Hp(p1HpCurrent)
+            }
+          }
+          if (ev.heal_self && ev.heal_self > 0) {
+            const txt = `✨ ${skillName} +${ev.heal_self}HP`
+            if (ev.side === 'attacker') addLog(txt, '#00FF88', '', '')
+            else                        addLog('', '', txt, '#00FF88')
+            const selfSide = ev.side === 'attacker' ? 'p1' : 'p2'
+            spawnFloat(ev.heal_self, false, selfSide, false, `💚 +${ev.heal_self}`, '#00FF88', 18)
+            // ✅ HP bar'ı anında güncelle — heal animasyonuyla senkron
+            if (ev.side === 'attacker') {
+              p1HpCurrent = Math.min(r.attacker_hp_start, p1HpCurrent + ev.heal_self)
+              setP1Hp(p1HpCurrent)
+            } else {
+              p2HpCurrent = Math.min(r.defender_hp_start, p2HpCurrent + ev.heal_self)
+              setP2Hp(p2HpCurrent)
+            }
+          }
+          if (ev.add_self_shield) {
+            const selfSide = ev.side === 'attacker' ? 'p1' : 'p2'
+            spawnFloat(ev.add_self_shield, false, selfSide, false, `🛡 +${ev.add_self_shield}`, '#3B82F6', 18)
+          }
+          if (ev.cleanse) {
+            const selfSide = ev.side === 'attacker' ? 'p1' : 'p2'
+            spawnFloat(0, false, selfSide, false, '✨ CLEANSE', '#00FF88', 16)
+          }
+          // ✅ Revive event — HP bar'ı 0'dan revive HP'sine atla
+          if (ev.effect_type === 'revive_setup' && ev.heal_self && ev.heal_self > 0) {
+            const selfSide = ev.side === 'attacker' ? 'p1' : 'p2'
+            spawnFloat(ev.heal_self, false, selfSide, false, `⚡ REVIVE +${ev.heal_self}`, '#FFD700', 20)
+            if (ev.side === 'attacker') {
+              p1HpCurrent = ev.heal_self
+              setP1Hp(p1HpCurrent)
+            } else {
+              p2HpCurrent = ev.heal_self
+              setP2Hp(p2HpCurrent)
+            }
+          }
+        }
+      }
 
       // 1. ÖNCE: dot_tick'ler (renkli floating damage + HP düş)
       for (const ev of skillsThisRound) {
@@ -728,7 +789,6 @@ export default function ArenaBattleModal({
         const dotDmg = ev.dmg_to_enemy ?? ev.value ?? 0
         spawnFloat(dotDmg, false, side, false,
           `${emoji} -${dotDmg}`, dotColor, 16)
-        // ✅ DoT damage HP barını ANINDA azalt
         if (side === 'p1') {
           p1HpCurrent = Math.max(0, p1HpCurrent - dotDmg)
           setP1Hp(p1HpCurrent)
@@ -738,16 +798,27 @@ export default function ArenaBattleModal({
         }
       }
 
-      // 2. Normal saldırılar — INCREMENTAL: sadece bu attack'ın damage'ını uygula
-      // (skill damage'ı sonra champion skill cast aşamasında ayrıca düşer)
+      // 2. Normal saldırılar + champion skill'ler — SIRA:
+      // attacker_first: P1 saldırı → P1 skill → P2 saldırı → P2 skill
+      // defender_first: P2 saldırı → P2 skill → P1 saldırı → P1 skill
       if (r.attacker_first) {
-        // P2'ye saldırı: dodge/block ise HP değişmez, değilse attacker_dmg kadar azal
+        // ── P1 saldırı ──────────────────────────────────────────────────────
         const p2After = (log.defender_dodged || log.defender_blocked)
           ? p2HpCurrent
           : Math.max(0, p2HpCurrent - log.attacker_dmg)
         await playAttack(p1Ref, p2Ref, log.attacker_dmg, log.attacker_crit, log.attacker_double, log.defender_blocked, log.defender_dodged, 'p1', undefined, p2After)
         p2HpCurrent = p2After
         if (!isMounted.current || isSkipped.current) break
+
+        // ── P1 champion skill (CD hazırsa SQL zaten koyar) ─────────────────
+        if (attackerSkills.length > 0) {
+          await sleep(300)
+          if (!isMounted.current || isSkipped.current) break
+          await playSkillGroup(attackerSkills)
+          if (!isMounted.current || isSkipped.current) break
+        }
+
+        // ── P2 saldırı (stun/freeze varsa dmg=0 olabilir, ama blok kontrol et) ─
         if (log.defender_hp_after > 0 && (log.defender_dmg > 0 || log.attacker_blocked || log.attacker_dodged)) {
           await sleep(TIMING.BETWEEN)
           if (!isMounted.current || isSkipped.current) break
@@ -756,8 +827,20 @@ export default function ArenaBattleModal({
             : Math.max(0, p1HpCurrent - log.defender_dmg)
           await playAttack(p2Ref, p1Ref, log.defender_dmg, log.defender_crit, log.defender_double, log.attacker_blocked, log.attacker_dodged, 'p2', p1After, undefined)
           p1HpCurrent = p1After
+          if (!isMounted.current || isSkipped.current) break
         }
+
+        // ── P2 champion skill — ATTACK'TAN BAĞIMSIZ: stun olsa da skill atar ─
+        // SQL defender canlıysa skill ekler, yoksa eklemiyor zaten
+        if (defenderSkills.length > 0) {
+          await sleep(300)
+          if (!isMounted.current || isSkipped.current) break
+          await playSkillGroup(defenderSkills)
+          if (!isMounted.current || isSkipped.current) break
+        }
+
       } else {
+        // ── P2 saldırı ──────────────────────────────────────────────────────
         if (log.defender_dmg > 0 || log.attacker_blocked || log.attacker_dodged) {
           const p1After = (log.attacker_dodged || log.attacker_blocked)
             ? p1HpCurrent
@@ -766,6 +849,16 @@ export default function ArenaBattleModal({
           p1HpCurrent = p1After
           if (!isMounted.current || isSkipped.current) break
         }
+
+        // ── P2 champion skill — ATTACK'TAN BAĞIMSIZ ───────────────────────
+        if (defenderSkills.length > 0) {
+          await sleep(300)
+          if (!isMounted.current || isSkipped.current) break
+          await playSkillGroup(defenderSkills)
+          if (!isMounted.current || isSkipped.current) break
+        }
+
+        // ── P1 saldırı ──────────────────────────────────────────────────────
         if (log.attacker_hp_after > 0) {
           await sleep(TIMING.BETWEEN)
           if (!isMounted.current || isSkipped.current) break
@@ -774,66 +867,24 @@ export default function ArenaBattleModal({
             : Math.max(0, p2HpCurrent - log.attacker_dmg)
           await playAttack(p1Ref, p2Ref, log.attacker_dmg, log.attacker_crit, log.attacker_double, log.defender_blocked, log.defender_dodged, 'p1', undefined, p2After)
           p2HpCurrent = p2After
+          if (!isMounted.current || isSkipped.current) break
+
+          // ── P1 champion skill — ATTACK'TAN BAĞIMSIZ ─────────────────────
+          if (attackerSkills.length > 0) {
+            await sleep(300)
+            if (!isMounted.current || isSkipped.current) break
+            await playSkillGroup(attackerSkills)
+            if (!isMounted.current || isSkipped.current) break
+          }
         }
       }
       if (!isMounted.current || isSkipped.current) break
 
-      // 3. SONRA: skill cast'leri (overlay + state)
+      // Revive skill'leri (sıradan bağımsız)
       for (const ev of skillsThisRound) {
-        if (ev.effect_type === 'dot_tick' || ev.effect_type === 'revive' || isSkipped.current) continue
-        // Cast olarak göster
+        if (ev.effect_type !== 'revive' || isSkipped.current) continue
         await playSkillCast(ev)
-        if (isSkipped.current) break
-
-        // State'e ekle
         applyEventToEffects(ev)
-
-        // Damage/heal HP bar'ı senkronla
-        // Skill HP'leri etkilemiş olmalı; SQL final HP'yi log.attacker_hp_after / defender_hp_after'a koyuyor
-        // Skill etkisi extra (round sonrası), ama HP bar'ı current state'e set
-        // Dolayısıyla saldırılar tamamlandığında HP zaten güncel — extra adjustment yok
-
-        // Skill log entry
-        const skillName = ev.skill_name ?? 'Skill'
-        if (ev.dmg_to_enemy && ev.dmg_to_enemy > 0) {
-          const txt = `✨ ${skillName} -${ev.dmg_to_enemy}`
-          if (ev.side === 'attacker') addLog(txt, '#A855F7', '', '')
-          else                        addLog('', '', txt, '#A855F7')
-          // Floating damage
-          const targetSide = ev.side === 'attacker' ? 'p2' : 'p1'
-          spawnFloat(ev.dmg_to_enemy, false, targetSide, false, `✨ -${ev.dmg_to_enemy}`, '#A855F7', 20)
-          // ✅ HP barını ANINDA güncelle — skill cast sırasında görsel feedback
-          if (ev.side === 'attacker') {
-            p2HpCurrent = Math.max(0, p2HpCurrent - ev.dmg_to_enemy)
-            setP2Hp(p2HpCurrent)
-          } else {
-            p1HpCurrent = Math.max(0, p1HpCurrent - ev.dmg_to_enemy)
-            setP1Hp(p1HpCurrent)
-          }
-        }
-        if (ev.heal_self && ev.heal_self > 0) {
-          const txt = `✨ ${skillName} +${ev.heal_self}HP`
-          if (ev.side === 'attacker') addLog(txt, '#00FF88', '', '')
-          else                        addLog('', '', txt, '#00FF88')
-          const selfSide = ev.side === 'attacker' ? 'p1' : 'p2'
-          spawnFloat(ev.heal_self, false, selfSide, false, `+${ev.heal_self} HP`, '#00FF88', 20)
-          // ✅ HP barını ANINDA güncelle — heal görsel feedback
-          if (ev.side === 'attacker') {
-            p1HpCurrent = Math.min(r.attacker_hp_start, p1HpCurrent + ev.heal_self)
-            setP1Hp(p1HpCurrent)
-          } else {
-            p2HpCurrent = Math.min(r.defender_hp_start, p2HpCurrent + ev.heal_self)
-            setP2Hp(p2HpCurrent)
-          }
-        }
-        if (ev.add_self_shield) {
-          const selfSide = ev.side === 'attacker' ? 'p1' : 'p2'
-          spawnFloat(ev.add_self_shield, false, selfSide, false, `🛡 +${ev.add_self_shield}`, '#3B82F6', 18)
-        }
-        if (ev.cleanse) {
-          const selfSide = ev.side === 'attacker' ? 'p1' : 'p2'
-          spawnFloat(0, false, selfSide, false, '✨ CLEANSE', '#00FF88', 16)
-        }
       }
 
       // ✅ FINAL HP SYNC — round sonu HP'lerini bar'a kesin yansıt
@@ -895,10 +946,10 @@ export default function ArenaBattleModal({
         <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.30)' }]} />
 
         {/* ══ STATS PANEL ══ */}
-        {battleReady && <Animated.View style={styles.statsPanel}>
+        {!!(battleReady) && <Animated.View style={styles.statsPanel}>
           <View style={styles.statsPlayerCol}>
             <Text style={[styles.statsName, { color: COLORS.neonGreen as string }]} numberOfLines={1}>{playerName}</Text>
-            {playerStats && (
+            {!!(playerStats) && (
               <View style={styles.miniStats}>
                 <StatRow label="ATK:"  value={playerStats.atk.toLocaleString()} />
                 <StatRow label="HP:"   value={playerStats.hp.toLocaleString()} />
@@ -915,7 +966,7 @@ export default function ArenaBattleModal({
           </View>
           <View style={[styles.statsPlayerCol, { alignItems: 'flex-end' }]}>
             <Text style={[styles.statsName, { color: COLORS.error as string }]} numberOfLines={1}>{result.defender_name}</Text>
-            {defenderStats && (
+            {!!(defenderStats) && (
               <View style={[styles.miniStats, { alignItems: 'flex-end' }]}>
                 <StatRow label="ATK:"  value={defenderStats.atk.toLocaleString()} />
                 <StatRow label="HP:"   value={defenderStats.hp.toLocaleString()} />
@@ -932,11 +983,16 @@ export default function ArenaBattleModal({
         <View style={styles.arenaSection}>
           {/* P1 */}
           <View style={styles.charWrap}>
-            {battleReady && (
+            {!!(battleReady) && (
               <View style={{ width: CHAR_SIZE * 0.88, alignSelf: 'center' }}>
+                {p1Effects.some(e => e.kind === 'stun' && typeof e.turnsLeft === 'number' && e.turnsLeft > 0) ? (
+                  <View style={styles.stunBadgeRow}>
+                    <View style={styles.stunBadge}><Text style={styles.stunBadgeIcon}>💫 STUNNED</Text></View>
+                  </View>
+                ) : (
+                  <View style={styles.stunBadgeRowEmpty} />
+                )}
                 <CharHpBar current={p1Hp} max={p1HpMax} color={COLORS.neonGreen as string} width={CHAR_SIZE * 0.88} align="left" />
-                {/* ✅ P1 buff/debuff iconları */}
-                <BuffDebuffIcons effects={p1Effects} align="left" width={CHAR_SIZE * 0.88} />
               </View>
             )}
             <Animated.View style={{
@@ -974,11 +1030,16 @@ export default function ArenaBattleModal({
 
           {/* P2 */}
           <View style={styles.charWrap}>
-            {battleReady && (
+            {!!(battleReady) && (
               <View style={{ width: CHAR_SIZE * 0.88, alignSelf: 'center' }}>
+                {p2Effects.some(e => e.kind === 'stun' && typeof e.turnsLeft === 'number' && e.turnsLeft > 0) ? (
+                  <View style={[styles.stunBadgeRow, { justifyContent: 'flex-end' }]}>
+                    <View style={styles.stunBadge}><Text style={styles.stunBadgeIcon}>💫 STUNNED</Text></View>
+                  </View>
+                ) : (
+                  <View style={styles.stunBadgeRowEmpty} />
+                )}
                 <CharHpBar current={p2Hp} max={p2HpMax} color={COLORS.error as string} width={CHAR_SIZE * 0.88} align="right" />
-                {/* ✅ P2 buff/debuff iconları */}
-                <BuffDebuffIcons effects={p2Effects} align="right" width={CHAR_SIZE * 0.88} />
               </View>
             )}
             <Animated.View style={{
@@ -1146,4 +1207,27 @@ const styles = StyleSheet.create({
     borderRadius: 18, paddingHorizontal: 14, paddingVertical: 7, zIndex: 40,
   },
   skipText: { fontSize: 10, color: 'rgba(255,255,255,0.45)', letterSpacing: 2 },
+  stunBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 18,
+    marginBottom: 4,
+  },
+  stunBadgeRowEmpty: {
+    height: 18,
+    marginBottom: 4,
+  },
+  stunBadge: {
+    backgroundColor: 'rgba(255, 220, 0, 0.15)',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 220, 0, 0.6)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  stunBadgeIcon: {
+    fontSize: 10,
+    color: '#FFD700',
+    fontWeight: '700',
+  },
 })

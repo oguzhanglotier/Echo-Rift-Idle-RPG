@@ -117,13 +117,13 @@ export default function AfkRewardModal({
           {!collected ? (
             <>
               {/* Preview */}
-              {preview && (
+              {!!(preview) && (
                 <>
                   <View style={styles.timeRow}>
                     <Text style={styles.timeLabel}>Time</Text>
                     <Text style={[styles.timeVal, preview.is_capped && { color: passColor }]}>
                       {formatMinutes(preview.minutes)}
-                      {preview.is_capped && <Text style={styles.cappedTag}> FULL</Text>}
+                      {!!(preview.is_capped) && <Text style={styles.cappedTag}> FULL</Text>}
                     </Text>
                   </View>
 

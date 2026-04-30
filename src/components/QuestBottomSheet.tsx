@@ -9,6 +9,7 @@ import {
 } from 'react-native'
 import { COLORS, QUEST_CONFIGS } from '../constants'
 import { QuestDurationKey, ActiveQuest } from '../types'
+import { ThemedAlert } from './ThemedAlert'
 
 const { height, width } = Dimensions.get('window')
 const SHEET_HEIGHT = height * 0.52
@@ -122,7 +123,7 @@ export default function QuestBottomSheet({
   }
 
   const handleCancelQuest = async (quest: ActiveQuest) => {
-    Alert.alert(
+    ThemedAlert.alert(
       'Cancel Quest',
       `Cancel "${quest.name}"?\nStamina will be refunded.`,
       [
@@ -253,14 +254,14 @@ export default function QuestBottomSheet({
                     </Text>
 
                     {/* Level gate overlay */}
-                    {isLocked && (
+                    {!!(isLocked) && (
                       <View style={styles.lockedOverlay}>
                         <Text style={styles.lockedIcon}>🔒</Text>
                         <Text style={styles.lockedText}>Lv.10</Text>
                       </View>
                     )}
 
-                    {isLoading && (
+                    {!!(isLoading) && (
                       <View style={styles.loadingOverlay}>
                         <Text style={{ color: COLORS.neonGreen, fontSize: 10 }}>...</Text>
                       </View>

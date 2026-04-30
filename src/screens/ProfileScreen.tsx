@@ -14,6 +14,7 @@ import { supabase } from '../lib/supabase'
 import { useGameStore } from '../store/gameStore'
 import { useGame } from '../hooks/useGame'
 import { COLORS, CLASS_INFO } from '../constants'
+import { ThemedAlert } from '../components/ThemedAlert'
 
 const { width } = Dimensions.get('window')
 const CORNER = 10
@@ -21,6 +22,8 @@ const CORNER = 10
 // ─── CLASS AVATAR ─────────────────────────────────────────────────────────────
 const CLASS_AVATARS: Record<string, any> = {
   vanguard: require('../../assets/images/vanguard.png'),
+  riftmage: require('../../assets/images/riftmage.png'),
+  phantom:  require('../../assets/images/phantom.png'),
 }
 
 // ─── HOLO KART ───────────────────────────────────────────────────────────────
@@ -94,10 +97,10 @@ export default function ProfileScreen({ navigation }: any) {
     if (data?.success) {
       setShowRenameModal(false); setNewUsername('')
       await fetchPlayerState(userId)
-      Alert.alert('✅', `Username changed to ${data.username}!`)
+      ThemedAlert.alert('✅', `Username changed to ${data.username}!`)
     } else {
       if (data?.error === 'INSUFFICIENT_RC') {
-        Alert.alert('💎 Insufficient RC',
+        ThemedAlert.alert('💎 Insufficient RC',
           `You need 100 RC to rename.\nYou have: ${data.have} RC`,
           [{ text: 'Cancel', style: 'cancel' },
            { text: '🛒 SHOP', onPress: () => { setShowRenameModal(false); navigation.navigate('Shop') } }])
@@ -108,12 +111,12 @@ export default function ProfileScreen({ navigation }: any) {
         data?.error === 'INVALID_LENGTH'       ? 'Name must be 3-20 characters!' :
         data?.error === 'INVALID_CHARACTERS'   ? 'Only letters, numbers, _ and - allowed!' :
         data?.error || 'Failed to rename'
-      Alert.alert('Error', msg)
+      ThemedAlert.alert('Error', msg)
     }
   }
 
   const handleLogout = () => {
-    Alert.alert('Logout', 'Are you sure?', [
+    ThemedAlert.alert('Logout', 'Are you sure?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Logout', style: 'destructive', onPress: async () => {
         await supabase.auth.signOut()
@@ -176,6 +179,9 @@ export default function ProfileScreen({ navigation }: any) {
             <TouchableOpacity onPress={() => navigation.navigate('Achievements')}>
               <Text style={{ fontSize: 22 }}>🏆</Text>
             </TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('Referral')}>
+              <Text style={{ fontSize: 22 }}>🤝</Text>
+            </TouchableOpacity>
             <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
               <Text style={{ fontSize: 22 }}>⚙️</Text>
             </TouchableOpacity>
@@ -202,7 +208,7 @@ export default function ProfileScreen({ navigation }: any) {
               <TouchableOpacity onPress={() => { setNewUsername(player.username); setShowRenameModal(true) }}>
                 <Text style={styles.username}>{player.username} <Text style={{ fontSize: 12, color: '#00D4FF' }}>✏️</Text></Text>
               </TouchableOpacity>
-              {classInfo && (
+              {!!(classInfo) && (
                 <Text style={[styles.className, { color: classInfo.color }]}>
                   {classInfo.icon} {classInfo.name?.toUpperCase()}
                 </Text>
@@ -225,7 +231,7 @@ export default function ProfileScreen({ navigation }: any) {
         </HoloCard>
 
         {/* ══ BÖLGE 2: CLASS BONUSES ══ */}
-        {classInfo && (
+        {!!(classInfo) && (
           <HoloCard color={classInfo.color} style={{ marginBottom: 12 }}>
             <Text style={[styles.sectionTitle, { color: classInfo.color }]}>
               {classInfo.icon} {classInfo.name?.toUpperCase()} CLASS BONUSES
@@ -271,7 +277,7 @@ export default function ProfileScreen({ navigation }: any) {
         {/* ══ BÖLGE 4: DROP BONUSES ══ */}
         <HoloCard style={{ marginBottom: 12 }}>
           <Text style={styles.sectionTitle}>DROP BONUSES</Text>
-          <Text style={styles.bonusNote}>Level {player.level} bazlı — level atladıkça artar</Text>
+          <Text style={styles.bonusNote}>Based on Level {player.level} — increases as you level up</Text>
           <View style={styles.divider} />
           <StatRow label="ITEM DROP RATE"       value={`${((player.level || 1) * 0.5).toFixed(1)}%`}  color='#FFD700' />
           <StatRow label="BONUS ITEM DROP"      value={`${((player.level || 1) * 0.2).toFixed(1)}%`}  color='#FFD700' />
@@ -299,6 +305,7 @@ export default function ProfileScreen({ navigation }: any) {
             <Text style={[styles.sectionTitle, { color: '#B366FF', fontSize: 9 }]}>DUNGEON</Text>
             <View style={styles.divider} />
             <StatRow label="FLOOR"      value={`F${dungeon.current_floor || 1}`} color='#FFD700' />
+            <StatRow label="BEST"       value={`F${dungeon.max_floor || 1}`} color='#FFD700' />
             <StatRow label="TODAY"      value={`${dungeon.attempts_today || 0}/${dungeon.max_attempts || 3}`} />
           </HoloCard>
         </View>
@@ -396,7 +403,7 @@ export default function ProfileScreen({ navigation }: any) {
                 <Text style={[styles.passCardName, { color: '#C0C0C0' }]}>🥈 SILVER PASS</Text>
                 <TouchableOpacity
                   style={[styles.buyBtn, { borderColor: '#C0C0C0' }]}
-                  onPress={() => { setShowPassModal(false); Alert.alert('Coming Soon', 'Purchase system coming soon!') }}
+                  onPress={() => { setShowPassModal(false); ThemedAlert.alert('Coming Soon', 'Purchase system coming soon!') }}
                 >
                   <Text style={[styles.buyBtnText, { color: '#C0C0C0' }]}>💎 400</Text>
                 </TouchableOpacity>
@@ -412,7 +419,7 @@ export default function ProfileScreen({ navigation }: any) {
                 <Text style={[styles.passCardName, { color: '#FFD700' }]}>🥇 GOLD PASS</Text>
                 <TouchableOpacity
                   style={[styles.buyBtn, { borderColor: '#FFD700' }]}
-                  onPress={() => { setShowPassModal(false); Alert.alert('Yakında', 'Satın alma sistemi yakında!') }}
+                  onPress={() => { setShowPassModal(false); ThemedAlert.alert('Coming Soon', 'Purchase system coming soon!') }}
                 >
                   <Text style={[styles.buyBtnText, { color: '#FFD700' }]}>💎 800</Text>
                 </TouchableOpacity>

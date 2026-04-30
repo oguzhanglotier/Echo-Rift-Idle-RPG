@@ -10,6 +10,7 @@ import React, { useEffect, useRef, useCallback, useState } from 'react'
 import {
   View, Text, StyleSheet, TouchableOpacity, Animated,
   Dimensions, StatusBar, Alert, ImageBackground, Image,
+  Modal,
 } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useFocusEffect, useNavigation } from '@react-navigation/native'
@@ -22,15 +23,19 @@ import LevelUpModal from '../components/LevelUpModal'
 import DailyLoginModal from '../components/DailyLoginModal'
 import QuestBottomSheet from '../components/QuestBottomSheet'
 import AfkRewardModal from '../components/AfkRewardModal'
+import { ThemedAlert } from '../components/ThemedAlert'
 
 const { width, height } = Dimensions.get('window')
 
-// ─── CLASS PORTRAIT IMAGES ───────────────────────────────────────────────────
-const CLASS_IMAGES: Record<string, any> = {
-  vanguard: require('../../assets/vanguard.png'),
-  phantom:  require('../../assets/phantom.png'),
-  riftmage: require('../../assets/riftmage.png'),
+// ─── CLASS AVATARS ───────────────────────────────────────────────────────────
+const CLASS_AVATARS: Record<string, any> = {
+  vanguard: require('../../assets/images/vanguard.png'),
+  riftmage: require('../../assets/images/riftmage.png'),
+  phantom:  require('../../assets/images/phantom.png'),
 }
+
+// CLASS_images = CLASS_AVATARS alias (header portrait için)
+const CLASS_IMAGES = CLASS_AVATARS
 
 const ZONES = [
   { id: 'arena',   screen: 'Arena',     label: 'ARENA',      color: '#B366FF', top: height * 0.18 },
@@ -179,7 +184,7 @@ function AfkButton({ onPress, hasReward }: { onPress: () => void; hasReward: boo
         <View style={afkStyles.cBR} />
         <Text style={afkStyles.icon}>⚡</Text>
         <Text style={[afkStyles.label, hasReward && { color: '#FFD700' }]}>AFK</Text>
-        {hasReward && <View style={afkStyles.dot} />}
+        {!!(hasReward) && <View style={afkStyles.dot} />}
       </Animated.View>
     </TouchableOpacity>
   )
@@ -214,6 +219,8 @@ export default function WorldMapScreen() {
 
   const [userId,         setUserId]         = useState<string | null>(null)
   const [unreadCount,    setUnread]         = useState(0)
+  const [moreMenuOpen,   setMoreMenuOpen]   = useState(false)
+  const [notifUnread,    setNotifUnread]    = useState(0)
   const [tick,           setTick]           = useState(0)
   const [questSheetOpen, setQuestSheetOpen] = useState(false)
   const [levelUpVisible, setLevelUpVisible] = useState(false)
@@ -260,6 +267,20 @@ export default function WorldMapScreen() {
     }
   }, [])
 
+  // ✅ Notification unread count yükleyici
+  const loadNotifCount = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || !isMountedRef.current) return
+    const { data } = await supabase.rpc('get_notifications', {
+      p_player_id: user.id,
+      p_limit: 1,
+      p_unread_only: true,
+    })
+    if (data?.success && isMountedRef.current) {
+      setNotifUnread(data.unread_count || 0)
+    }
+  }, [])
+
   useEffect(() => {
     let counter = 0
     const interval = setInterval(async () => {
@@ -301,7 +322,10 @@ export default function WorldMapScreen() {
     return () => clearInterval(interval)
   }, [showToast, checkAfkReward])
 
-  useFocusEffect(useCallback(() => { loadData() }, []))
+  useFocusEffect(useCallback(() => {
+    loadData()
+    loadNotifCount()
+  }, []))
 
   useEffect(() => {
     activeQuestEndsAtRef.current = playerState?.active_quest?.ends_at || null
@@ -363,18 +387,18 @@ export default function WorldMapScreen() {
     const regenned       = Math.floor(elapsed / 1800)
     const currentStamina = Math.min(playerState.player.stamina_max, playerState.player.stamina_current + regenned)
     if (currentStamina < config.stamina) {
-      Alert.alert('Insufficient Stamina', `Need ${config.stamina} ⚡, have ${currentStamina} ⚡`)
+      ThemedAlert.alert('Insufficient Stamina', `Need ${config.stamina} ⚡, have ${currentStamina} ⚡`)
       return
     }
     const maxSlots    = playerState.player.pass_type === 'gold' ? 5 : playerState.player.pass_type === 'silver' ? 4 : 2
     const activeCount = (playerState.active_quest ? 1 : 0) + (playerState.queued_quests?.length || 0)
-    if (activeCount >= maxSlots) { Alert.alert('Queue Full', `Max ${maxSlots} quests.`); return }
+    if (activeCount >= maxSlots) { ThemedAlert.alert('Queue Full', `Max ${maxSlots} quests.`); return }
     const result = await startQuest(userId, key)
     if (result?.success) {
       const state = await fetchPlayerState(userId)
       activeQuestEndsAtRef.current = state?.active_quest?.ends_at || null
     } else {
-      Alert.alert('Error', result?.error || 'Failed')
+      ThemedAlert.alert('Error', result?.error || 'Failed')
     }
   }
 
@@ -385,7 +409,7 @@ export default function WorldMapScreen() {
       const state = await fetchPlayerState(userId)
       activeQuestEndsAtRef.current = state?.active_quest?.ends_at || null
     } else {
-      Alert.alert('Error', result?.error || 'Failed')
+      ThemedAlert.alert('Error', result?.error || 'Failed')
     }
   }
 
@@ -478,21 +502,96 @@ export default function WorldMapScreen() {
           <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('DailyMissions')}>
             <Text style={styles.iconText}>📋</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('Shop')}>
-            <Text style={styles.iconText}>🛒</Text>
-          </TouchableOpacity>
           <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('Mailbox')}>
             <Text style={styles.iconText}>📬</Text>
             {unreadCount > 0 && <View style={styles.badge}><Text style={styles.badgeText}>{unreadCount}</Text></View>}
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('Leaderboard')}>
-            <Text style={styles.iconText}>🏅</Text>
+          <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('Notifications')}>
+            <Text style={styles.iconText}>🔔</Text>
+            {notifUnread > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{notifUnread > 99 ? '99+' : notifUnread}</Text>
+              </View>
+            )}
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('GlobalChat')}>
-            <Text style={styles.iconText}>💬</Text>
+          <TouchableOpacity style={styles.iconBtn} onPress={() => setMoreMenuOpen(true)}>
+            <Text style={styles.iconText}>⋯</Text>
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* ── MORE MENU MODAL ── */}
+      <Modal
+        visible={moreMenuOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMoreMenuOpen(false)}
+      >
+        <TouchableOpacity
+          style={styles.moreMenuBg}
+          activeOpacity={1}
+          onPress={() => setMoreMenuOpen(false)}
+        >
+          <View style={styles.moreMenuPanel}>
+            <Text style={styles.moreMenuTitle}>MENU</Text>
+            <View style={styles.moreMenuGrid}>
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => { setMoreMenuOpen(false); navigation.navigate('Friends') }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.menuItemIcon}>👥</Text>
+                <Text style={styles.menuItemLabel}>FRIENDS</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => { setMoreMenuOpen(false); navigation.navigate('Leaderboard') }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.menuItemIcon}>🏅</Text>
+                <Text style={styles.menuItemLabel}>LEADERBOARD</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => { setMoreMenuOpen(false); navigation.navigate('GlobalChat') }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.menuItemIcon}>💬</Text>
+                <Text style={styles.menuItemLabel}>CHAT</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => { setMoreMenuOpen(false); navigation.navigate('Shop') }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.menuItemIcon}>🛒</Text>
+                <Text style={styles.menuItemLabel}>SHOP</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => { setMoreMenuOpen(false); navigation.navigate('Achievements') }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.menuItemIcon}>🏆</Text>
+                <Text style={styles.menuItemLabel}>ACHIEVEMENTS</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => { setMoreMenuOpen(false); navigation.navigate('EchoPass') }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.menuItemIcon}>✨</Text>
+                <Text style={styles.menuItemLabel}>ECHO PASS</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* ── STATS STRIP ── */}
       <View style={styles.statsStrip}>
@@ -539,7 +638,7 @@ export default function WorldMapScreen() {
         />
       </View>
 
-      {questSheetOpen && (
+      {!!(questSheetOpen) && (
         <TouchableOpacity
           style={styles.sheetOverlay}
           onPress={() => setQuestSheetOpen(false)}
@@ -557,7 +656,7 @@ export default function WorldMapScreen() {
         tick={tick}
       />
 
-      {toastVisible && (
+      {!!(toastVisible) && (
         <Animated.View style={[styles.toast, { transform: [{ translateY: toastAnim }] }]} pointerEvents="none">
           <Text style={styles.toastText}>{toastMsg}</Text>
         </Animated.View>
@@ -627,6 +726,60 @@ const styles = StyleSheet.create({
     minWidth: 16, height: 16, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3,
   },
   badgeText: { fontSize: 9, color: '#fff', fontWeight: '800' },
+
+  // More menu
+  moreMenuBg: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-end',
+    paddingTop: 100,
+    paddingHorizontal: 16,
+  },
+  moreMenuPanel: {
+    backgroundColor: '#0A1628',
+    borderWidth: 1,
+    borderColor: 'rgba(0,212,255,0.4)',
+    borderRadius: 10,
+    padding: 16,
+    width: 280,
+  },
+  moreMenuTitle: {
+    fontSize: 10,
+    color: '#7B9DB4',
+    letterSpacing: 3,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  moreMenuGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  menuItem: {
+    width: '31%',
+    aspectRatio: 1,
+    backgroundColor: 'rgba(0,212,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(0,212,255,0.2)',
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+  },
+  menuItemIcon: {
+    fontSize: 28,
+    marginBottom: 4,
+  },
+  menuItemLabel: {
+    fontSize: 8,
+    color: '#E8F4FD',
+    letterSpacing: 1,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
 
   statsStrip: {
     position: 'absolute', top: 106, left: 16, right: 16,

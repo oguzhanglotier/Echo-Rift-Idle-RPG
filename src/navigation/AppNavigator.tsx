@@ -2,7 +2,7 @@
 // ECHO RIFT — NAVIGATION
 // =============================================
 
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { NavigationContainer } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
@@ -11,6 +11,9 @@ import AchievementsScreen from '../screens/AchievementsScreen'
 import SettingsScreen from '../screens/SettingsScreen'
 import { COLORS } from '../constants'
 import { supabase } from '../lib/supabase'
+import { useGameStore } from '../store/gameStore'
+import { useGame } from '../hooks/useGame'
+import QuestRewardModal from '../components/QuestRewardModal'
 
 import SplashScreen from '../screens/SplashScreen'
 import LoginScreen from '../screens/LoginScreen'
@@ -30,6 +33,10 @@ import GuildScreen from '../screens/GuildScreen'
 import GlobalChatScreen from '../screens/GlobalChatScreen'
 import ChampionCollectionScreen from '../screens/ChampionCollectionScreen'
 import SummonScreen from '../screens/SummonScreen'
+import FriendsScreen from '../screens/FriendsScreen'
+import ReferralScreen from '../screens/ReferralScreen'
+import NotificationsScreen from '../screens/NotificationsScreen'
+import PlayerProfileScreen from '../screens/PlayerProfileScreen'
 
 export type RootStackParamList = {
   Splash: undefined
@@ -48,6 +55,10 @@ export type RootStackParamList = {
   Champions: undefined
   Summon: undefined
   Guild: undefined
+  Friends: undefined
+  Referral: undefined
+  Notifications: undefined
+  PlayerProfile: { playerId: string }
 }
 
 export type MainTabParamList = {
@@ -80,34 +91,116 @@ const TabIcon = ({ label, focused, icon }: {
 )
 
 function MainTabs() {
+  // ✅ Quest tamamlanma — global, tüm tab'larda çalışır
+  const [userId, setUserId] = useState<string | null>(null)
+  const { questCompleted, setQuestCompleted } = useGameStore()
+  const { syncQuestQueue, fetchPlayerState } = useGame()
+  const channelRef = useRef<any>(null)
+  const isMounted = useRef(true)
+
+  useEffect(() => {
+    isMounted.current = true
+    return () => { isMounted.current = false }
+  }, [])
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null))
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setUserId(session?.user?.id ?? null)
+    })
+    return () => subscription.unsubscribe()
+  }, [])
+
+  useEffect(() => {
+    if (!userId) return
+
+    // ✅ Önceki channel varsa tamamen unsubscribe + remove (race condition önle)
+    if (channelRef.current) {
+      try {
+        channelRef.current.unsubscribe()
+        supabase.removeChannel(channelRef.current)
+      } catch (e) {
+        // Sessizce yut — zaten kapalıysa
+      }
+      channelRef.current = null
+    }
+
+    // ✅ Channel oluştur, callback ekle, EN SON subscribe et
+    const channel = supabase.channel(`global-quest-${userId}`)
+
+    channel.on('postgres_changes', {
+      event: 'UPDATE', schema: 'public',
+      table: 'player_quests', filter: `player_id=eq.${userId}`,
+    }, async (payload) => {
+      if (!isMounted.current) return
+      if (payload.new?.status === 'completed' && payload.old?.status === 'active') {
+        const syncResult = await syncQuestQueue(userId)
+        await fetchPlayerState(userId)
+        if (!isMounted.current) return
+        const q = syncResult?.completed_quests?.[0]
+        if (q?.success) {
+          setQuestCompleted({
+            questName: q.quest_name || q.name || 'Mission Complete',
+            xp:    q.xp_gained    || 0,
+            gold:  q.gold_gained  || 0,
+            items: q.items_earned || 0,
+          })
+        }
+      }
+    })
+
+    // ✅ Tüm callback'ler eklendikten sonra subscribe
+    channel.subscribe()
+
+    channelRef.current = channel
+    return () => {
+      try {
+        channel.unsubscribe()
+        supabase.removeChannel(channel)
+      } catch (e) {
+        // Sessizce yut
+      }
+      channelRef.current = null
+    }
+  }, [userId])
+
   return (
-    <Tab.Navigator
-      screenOptions={{
-        headerShown: false,
-        tabBarStyle: {
-          backgroundColor: '#050A0F',
-          borderTopColor: '#1A3A5C',
-          borderTopWidth: 1,
-          height: 70,
-          paddingBottom: 8,
-          paddingTop: 8,
-        },
-        tabBarShowLabel: false,
-      }}
-    >
-      <Tab.Screen name="Home" component={WorldMapScreen}
-        options={{ tabBarIcon: ({ focused }) => <TabIcon label="Home" focused={focused} icon="🌍" /> }} />
-      <Tab.Screen name="Ship" component={ShipScreen}
-        options={{ tabBarIcon: ({ focused }) => <TabIcon label="Ship" focused={focused} icon="🚀" /> }} />
-      <Tab.Screen name="Dungeon" component={DungeonScreen}
-        options={{ tabBarIcon: ({ focused }) => <TabIcon label="Dungeon" focused={focused} icon="⚔️" /> }} />
-      <Tab.Screen name="Inventory" component={InventoryScreen}
-        options={{ tabBarIcon: ({ focused }) => <TabIcon label="Gear" focused={focused} icon="🎒" /> }} />
-      <Tab.Screen name="Arena" component={ArenaScreen}
-        options={{ tabBarIcon: ({ focused }) => <TabIcon label="Arena" focused={focused} icon="🏆" /> }} />
-      <Tab.Screen name="Champions" component={ChampionCollectionScreen}
-        options={{ tabBarIcon: ({ focused }) => <TabIcon label="Heroes" focused={focused} icon="⚡" /> }} />
-    </Tab.Navigator>
+    <>
+      <Tab.Navigator
+        screenOptions={{
+          headerShown: false,
+          tabBarStyle: {
+            backgroundColor: '#050A0F',
+            borderTopColor: '#1A3A5C',
+            borderTopWidth: 1,
+            height: 70,
+            paddingBottom: 8,
+            paddingTop: 8,
+          },
+          tabBarShowLabel: false,
+        }}
+      >
+        <Tab.Screen name="Home" component={WorldMapScreen}
+          options={{ tabBarIcon: ({ focused }) => <TabIcon label="Home" focused={focused} icon="🌍" /> }} />
+        <Tab.Screen name="Ship" component={ShipScreen}
+          options={{ tabBarIcon: ({ focused }) => <TabIcon label="Ship" focused={focused} icon="🚀" /> }} />
+        <Tab.Screen name="Dungeon" component={DungeonScreen}
+          options={{ tabBarIcon: ({ focused }) => <TabIcon label="Dungeon" focused={focused} icon="⚔️" /> }} />
+        <Tab.Screen name="Inventory" component={InventoryScreen}
+          options={{ tabBarIcon: ({ focused }) => <TabIcon label="Gear" focused={focused} icon="🎒" /> }} />
+        <Tab.Screen name="Arena" component={ArenaScreen}
+          options={{ tabBarIcon: ({ focused }) => <TabIcon label="Arena" focused={focused} icon="🏆" /> }} />
+        <Tab.Screen name="Champions" component={ChampionCollectionScreen}
+          options={{ tabBarIcon: ({ focused }) => <TabIcon label="Heroes" focused={focused} icon="⚡" /> }} />
+      </Tab.Navigator>
+
+      {/* ✅ Global quest reward modal — hangi ekranda olursa olsun */}
+      <QuestRewardModal
+        visible={!!questCompleted}
+        data={questCompleted}
+        onDismiss={() => setQuestCompleted(null)}
+      />
+    </>
   )
 }
 
@@ -116,11 +209,9 @@ export default function AppNavigator({ navigationRef }: { navigationRef?: any })
   const ref = navigationRef || internalRef
 
   useEffect(() => {
-    // Auth state değişimini dinle
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (event === 'SIGNED_OUT' || !session) {
-          // Logout olunca Login'e gönder
           ref.current?.reset({
             index: 0,
             routes: [{ name: 'Login' }],
@@ -128,7 +219,6 @@ export default function AppNavigator({ navigationRef }: { navigationRef?: any })
         }
       }
     )
-
     return () => subscription.unsubscribe()
   }, [ref])
 
@@ -151,6 +241,10 @@ export default function AppNavigator({ navigationRef }: { navigationRef?: any })
         <Stack.Screen name="Guild" component={GuildScreen} />
         <Stack.Screen name="Champions" component={ChampionCollectionScreen} />
         <Stack.Screen name="Summon" component={SummonScreen} />
+        <Stack.Screen name="Friends" component={FriendsScreen} />
+        <Stack.Screen name="Referral" component={ReferralScreen} />
+        <Stack.Screen name="Notifications" component={NotificationsScreen} />
+        <Stack.Screen name="PlayerProfile" component={PlayerProfileScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   )

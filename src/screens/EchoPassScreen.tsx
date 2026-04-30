@@ -12,6 +12,7 @@ import { supabase } from '../lib/supabase'
 import { useGameStore } from '../store/gameStore'
 import { useGame } from '../hooks/useGame'
 import { COLORS } from '../constants'
+import { ThemedAlert } from '../components/ThemedAlert'
 
 const { width } = Dimensions.get('window')
 
@@ -30,12 +31,12 @@ const RARITY_COLORS: Record<string, string> = {
 // FREE: gold, scrap, Uncommon/Rare/Epic
 // PAID: rc, Legendary, Dimensional
 const MILESTONE_REWARDS: Record<number, {
-  type: string; gold?: number; rc?: number; scrap?: number
+  type: string; gold?: number; rc?: number; scrap?: number; scroll?: number
   item?: string; count?: number; free: boolean
 }> = {
   1:  { type: 'gold',  gold: 100,   free: true  },
   2:  { type: 'gold',  gold: 200,   free: true  },
-  3:  { type: 'rc',    rc: 5,       free: false },
+  3:  { type: 'scroll', scroll: 1,  free: true  },
   4:  { type: 'item',  item: 'Uncommon', count: 3, free: true  },
   5:  { type: 'gold',  gold: 500,   free: true  },
   6:  { type: 'rc',    rc: 10,      free: false },
@@ -44,7 +45,7 @@ const MILESTONE_REWARDS: Record<number, {
   9:  { type: 'rc',    rc: 15,      free: false },
   10: { type: 'item',  item: 'Epic', count: 2,  free: true  },
   11: { type: 'gold',  gold: 2000,  free: true  },
-  12: { type: 'rc',    rc: 20,      free: false },
+  12: { type: 'scroll', scroll: 2,  free: true  },
   13: { type: 'item',  item: 'Rare', count: 3,  free: true  },
   14: { type: 'gold',  gold: 3000,  free: true  },
   15: { type: 'mixed', rc: 25, scrap: 50,        free: false },
@@ -53,22 +54,22 @@ const MILESTONE_REWARDS: Record<number, {
   18: { type: 'rc',    rc: 30,      free: false },
   19: { type: 'item',  item: 'Legendary', count: 1, free: false },
   20: { type: 'mixed', gold: 5000, scrap: 100,   free: true  },
-  21: { type: 'rc',    rc: 40,      free: false },
+  21: { type: 'scroll', scroll: 3,  free: true  },
   22: { type: 'item',  item: 'Epic', count: 3,  free: true  },
   23: { type: 'gold',  gold: 6000,  free: true  },
   24: { type: 'rc',    rc: 50,      free: false },
   25: { type: 'item',  item: 'Legendary', count: 2, free: false },
   26: { type: 'gold',  gold: 7000,  free: true  },
-  27: { type: 'rc',    rc: 60,      free: false },
+  27: { type: 'scroll', scroll: 3,  free: true  },
   28: { type: 'scrap', scrap: 200,  free: true  },
   29: { type: 'item',  item: 'Legendary', count: 2, free: false },
-  30: { type: 'mixed', gold: 8000, rc: 80,       free: false },
+  30: { type: 'scroll', scroll: 5,  free: true  },
   31: { type: 'item',  item: 'Epic', count: 5,  free: true  },
   32: { type: 'gold',  gold: 10000, free: true  },
   33: { type: 'rc',    rc: 100,     free: false },
   34: { type: 'item',  item: 'Legendary', count: 3, free: false },
   35: { type: 'scrap', scrap: 500,  free: true  },
-  36: { type: 'rc',    rc: 120,     free: false },
+  36: { type: 'scroll', scroll: 5,  free: true  },
   37: { type: 'item',  item: 'Legendary', count: 3, free: false },
   38: { type: 'gold',  gold: 15000, free: true  },
   39: { type: 'rc',    rc: 150,     free: false },
@@ -77,10 +78,11 @@ const MILESTONE_REWARDS: Record<number, {
 
 function getRewardLabel(r: typeof MILESTONE_REWARDS[number]): string {
   const parts: string[] = []
-  if (r.gold)  parts.push(`${r.gold.toLocaleString()} Gold`)
-  if (r.rc)    parts.push(`${r.rc} RC`)
-  if (r.scrap) parts.push(`${r.scrap} Scrap`)
-  if (r.item)  parts.push(`${r.count}x ${r.item}`)
+  if (r.gold)   parts.push(`${r.gold.toLocaleString()} Gold`)
+  if (r.rc)     parts.push(`${r.rc} RC`)
+  if (r.scrap)  parts.push(`${r.scrap} Scrap`)
+  if (r.scroll) parts.push(`${r.scroll}x Echo Sigil`)
+  if (r.item)   parts.push(`${r.count}x ${r.item}`)
   return parts.join(' + ')
 }
 
@@ -90,6 +92,7 @@ function getRewardIcon(r: typeof MILESTONE_REWARDS[number]): string {
   if (r.item === 'Epic')        return '🟣'
   if (r.item === 'Rare')        return '🔵'
   if (r.item === 'Uncommon')    return '🟢'
+  if (r.scroll)                 return '📜'
   if (r.rc && r.gold)           return '✨'
   if (r.rc)                     return '💎'
   if (r.gold)                   return '🪙'
@@ -129,10 +132,10 @@ export default function EchoPassScreen({ navigation }: any) {
       if (data?.success) {
         await fetchPlayerState(userId)
       } else {
-        Alert.alert('Error', data?.error || 'Claim failed')
+        ThemedAlert.alert('Error', data?.error || 'Claim failed')
       }
     } catch (err: any) {
-      Alert.alert('Error', err.message)
+      ThemedAlert.alert('Error', err.message)
     } finally {
       setClaimingId(null)
     }
@@ -155,7 +158,7 @@ export default function EchoPassScreen({ navigation }: any) {
     })
 
     if (claimable.length === 0) {
-      Alert.alert('Nothing to claim', 'All available rewards have been claimed!')
+      ThemedAlert.alert('Nothing to claim', 'All available rewards have been claimed!')
       return
     }
 
@@ -169,9 +172,9 @@ export default function EchoPassScreen({ navigation }: any) {
         if (!data?.success && data?.error !== 'ALREADY_CLAIMED') break
       }
       await fetchPlayerState(userId)
-      Alert.alert('Done!', `${claimable.length} reward(s) claimed!`)
+      ThemedAlert.alert('Done!', `${claimable.length} reward(s) claimed!`)
     } catch (err: any) {
-      Alert.alert('Error', err.message)
+      ThemedAlert.alert('Error', err.message)
     } finally {
       setClaiming(false)
     }
@@ -182,15 +185,15 @@ export default function EchoPassScreen({ navigation }: any) {
     const { player } = playerState
 
     if ((playerState as any).echo_pass?.purchased) {
-      Alert.alert('Already Purchased', 'You already own Echo Pass!')
+      ThemedAlert.alert('Already Purchased', 'You already own Echo Pass!')
       return
     }
     if (player.rc_balance < PASS_PRICE_RC) {
-      Alert.alert('Insufficient RC', `Need ${PASS_PRICE_RC} RC.\nYou have ${player.rc_balance} RC.`)
+      ThemedAlert.alert('Insufficient RC', `Need ${PASS_PRICE_RC} RC.\nYou have ${player.rc_balance} RC.`)
       return
     }
 
-    Alert.alert(
+    ThemedAlert.alert(
       'Purchase Echo Pass',
       `Buy Echo Pass for ${PASS_PRICE_RC} RC?\n\nUnlocks all milestone rewards!`,
       [
@@ -206,12 +209,12 @@ export default function EchoPassScreen({ navigation }: any) {
               if (error) throw error
               if (data?.success) {
                 await fetchPlayerState(userId)
-                Alert.alert('Success!', 'Echo Pass activated!')
+                ThemedAlert.alert('Success!', 'Echo Pass activated!')
               } else {
-                Alert.alert('Error', data?.error || 'Purchase failed')
+                ThemedAlert.alert('Error', data?.error || 'Purchase failed')
               }
             } catch (err: any) {
-              Alert.alert('Error', err.message)
+              ThemedAlert.alert('Error', err.message)
             } finally {
               setPurchasing(false)
             }

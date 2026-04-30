@@ -1,4 +1,100 @@
 // =============================================
+// FRIEND & REFERRAL — Backend RPC return shapes
+// =============================================
+export interface Friend {
+  friend_id: string
+  username: string
+  level: number
+  class_type: ClassType | null
+  power_score: number
+  last_active_at: string
+  is_online: boolean
+  source: 'manual' | 'referral'
+  is_referral: boolean
+  friendship_created_at: string
+  gift_sent_today: boolean
+  gift_received_pending: boolean
+}
+
+export interface FriendRequestIncoming {
+  request_id: string
+  from_player_id: string
+  from_username: string
+  from_level: number
+  from_class_type: ClassType | null
+  from_power_score: number
+  created_at: string
+}
+
+export interface FriendRequestOutgoing {
+  request_id: string
+  to_player_id: string
+  to_username: string
+  to_level: number
+  created_at: string
+}
+
+export interface FriendsListData {
+  success: boolean
+  count: number
+  max_friends: number
+  friends: Friend[]
+  pending_incoming: FriendRequestIncoming[]
+  pending_outgoing: FriendRequestOutgoing[]
+  pending_incoming_count: number
+  pending_outgoing_count: number
+}
+
+export interface FriendSuggestion {
+  player_id: string
+  username: string
+  level: number
+  class_type: ClassType | null
+  power_score: number
+  last_active_at: string
+  is_online: boolean
+  level_diff: number
+  sort_score: number
+}
+
+export interface SearchPlayerResult {
+  player_id: string
+  username: string
+  level: number
+  class_type: ClassType | null
+  power_score: number
+  last_active_at: string
+  is_online: boolean
+  referral_code: string
+  is_friend: boolean
+  request_sent: boolean
+  request_received: boolean
+}
+
+export interface ReferredPlayer {
+  player_id: string
+  username: string
+  level: number
+  milestones_reached: number
+  last_active_at: string
+}
+
+export interface ReferralSummaryData {
+  success: boolean
+  my_referral_code: string
+  can_redeem: boolean
+  already_redeemed: boolean
+  level_limit: number
+  referrer: { id: string; username: string; level: number } | null
+  referred_players: ReferredPlayer[]
+  total_referrals: number
+  total_energy_earned_as_referrer: number
+  total_energy_earned_as_referred: number
+  rc_earned_from_referrals: number
+  rc_per_referral: number
+  rc_ip_cap: number
+}
+// =============================================
 // ECHO RIFT — TYPE DEFINITIONS
 // =============================================
 
@@ -185,12 +281,16 @@ export interface RoundLog {
   attacker_dodged: boolean
   attacker_double: boolean
   attacker_hp_after: number
+  attacker_passive_heal?: number   // ✅ Pasif regen miktarı (round sonunda)
   defender_dmg: number
   defender_crit: boolean
   defender_blocked: boolean
   defender_dodged: boolean
   defender_double: boolean
   defender_hp_after: number
+  defender_passive_heal?: number   // ✅ Pasif regen miktarı (round sonunda)
+  attacker_shield?: number   // ✅ attacker'ın aktif shield miktarı (0 = yok)
+  defender_shield?: number   // ✅ defender'ın aktif shield miktarı
   champion_skill?: { skill_name: string; type: string; value: number } | null
   champion_skills?: ChampionSkillEvent[]
 }
@@ -232,6 +332,14 @@ export interface ArenaBattleResult {
   defender_champion_2_id?: string | null
   defender_champion_2_name?: string | null
   defender_champion_2_element?: string | null
+  attacker_champion_1_cd?: number | null
+  attacker_champion_1_skill_name?: string | null
+  attacker_champion_2_cd?: number | null
+  attacker_champion_2_skill_name?: string | null
+  defender_champion_1_cd?: number | null
+  defender_champion_1_skill_name?: string | null
+  defender_champion_2_cd?: number | null
+  defender_champion_2_skill_name?: string | null
 }
 
 export interface ArenaState {

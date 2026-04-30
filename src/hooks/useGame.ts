@@ -581,6 +581,129 @@ export const useGame = () => {
     }
   }, [])
 
+  // =============================================
+  // FRIENDS & REFERRAL
+  // =============================================
+  const getFriendsList = useCallback(async (playerId: string) => {
+    try {
+      const { data, error } = await supabase.rpc('get_friends_list', { p_player_id: playerId })
+      if (error) throw error
+      return data
+    } catch (err: any) { setError(err.message); return null }
+  }, [])
+
+  const getFriendSuggestions = useCallback(async (playerId: string) => {
+    try {
+      const { data, error } = await supabase.rpc('get_friend_suggestions', { p_player_id: playerId })
+      if (error) throw error
+      return data
+    } catch (err: any) { setError(err.message); return null }
+  }, [])
+
+  const searchPlayers = useCallback(async (playerId: string, query: string) => {
+    try {
+      const { data, error } = await supabase.rpc('search_players', { p_player_id: playerId, p_query: query })
+      if (error) throw error
+      return data
+    } catch (err: any) { setError(err.message); return null }
+  }, [])
+
+  const sendFriendRequest = useCallback(
+    async (playerId: string, opts: { username?: string; targetPlayerId?: string }) => {
+      try {
+        const { data, error } = await supabase.rpc('send_friend_request', {
+          p_player_id: playerId,
+          p_target_username: opts.username || null,
+          p_target_player_id: opts.targetPlayerId || null,
+        })
+        if (error) throw error
+        return data
+      } catch (err: any) { setError(err.message); return null }
+    }, []
+  )
+
+  const acceptFriendRequest = useCallback(async (playerId: string, requestId: string) => {
+    try {
+      const { data, error } = await supabase.rpc('accept_friend_request', {
+        p_player_id: playerId, p_request_id: requestId,
+      })
+      if (error) throw error
+      return data
+    } catch (err: any) { setError(err.message); return null }
+  }, [])
+
+  const rejectFriendRequest = useCallback(async (playerId: string, requestId: string) => {
+    try {
+      const { data, error } = await supabase.rpc('reject_friend_request', {
+        p_player_id: playerId, p_request_id: requestId,
+      })
+      if (error) throw error
+      return data
+    } catch (err: any) { setError(err.message); return null }
+  }, [])
+
+  const cancelFriendRequest = useCallback(async (playerId: string, requestId: string) => {
+    try {
+      const { data, error } = await supabase.rpc('cancel_friend_request', {
+        p_player_id: playerId, p_request_id: requestId,
+      })
+      if (error) throw error
+      return data
+    } catch (err: any) { setError(err.message); return null }
+  }, [])
+
+  const addFriendByCode = useCallback(async (playerId: string, friendCode: string) => {
+    try {
+      const { data, error } = await supabase.rpc('add_friend_by_code', {
+        p_player_id: playerId, p_friend_code: friendCode,
+      })
+      if (error) throw error
+      return data
+    } catch (err: any) { setError(err.message); return null }
+  }, [])
+
+  const removeFriend = useCallback(async (playerId: string, friendId: string) => {
+    try {
+      const { data, error } = await supabase.rpc('remove_friend', {
+        p_player_id: playerId, p_friend_id: friendId,
+      })
+      if (error) throw error
+      return data
+    } catch (err: any) { setError(err.message); return null }
+  }, [])
+
+  const sendEnergyGift = useCallback(async (playerId: string, friendId: string) => {
+    try {
+      const { data, error } = await supabase.rpc('send_energy_gift', {
+        p_player_id: playerId, p_friend_id: friendId,
+      })
+      if (error) throw error
+      return data
+    } catch (err: any) { setError(err.message); return null }
+  }, [])
+
+  const getReferralSummary = useCallback(async (playerId: string) => {
+    try {
+      const { data, error } = await supabase.rpc('get_referral_summary', { p_player_id: playerId })
+      if (error) throw error
+      return data
+    } catch (err: any) { setError(err.message); return null }
+  }, [])
+
+  const redeemReferralCode = useCallback(
+    async (playerId: string, code: string, ipAddress: string | null) => {
+      try {
+        const { data, error } = await supabase.rpc('redeem_referral_code', {
+          p_player_id: playerId,
+          p_code: code,
+          p_ip_address: ipAddress,
+        })
+        if (error) throw error
+        return data
+      } catch (err: any) { setError(err.message); return null }
+    }, []
+  )
+
   return {
     fetchPlayerState,
     startQuest,
@@ -607,5 +730,17 @@ export const useGame = () => {
     upgradeShipModule,
     useShipSkill,
     playerState,
+    getFriendsList,
+    getFriendSuggestions,
+    searchPlayers,
+    sendFriendRequest,
+    acceptFriendRequest,
+    rejectFriendRequest,
+    cancelFriendRequest,
+    addFriendByCode,
+    removeFriend,
+    sendEnergyGift,
+    getReferralSummary,
+    redeemReferralCode,
   }
 }

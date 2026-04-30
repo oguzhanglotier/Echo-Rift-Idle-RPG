@@ -7,13 +7,15 @@ import React, { useCallback, useState, useRef } from 'react'
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   StatusBar, Dimensions, Alert, TextInput, RefreshControl,
-  KeyboardAvoidingView, Platform, FlatList, Animated,
+  KeyboardAvoidingView, Platform, FlatList, Animated, Modal,
 } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
 import { supabase } from '../lib/supabase'
 import { useGameStore } from '../store/gameStore'
 import { useGame } from '../hooks/useGame'
 import { COLORS } from '../constants'
+import { ThemedAlert } from '../components/ThemedAlert'
+import { PlayerActionMenu } from '../components/PlayerActionMenu'
 
 const { width } = Dimensions.get('window')
 type Tab = 'info' | 'members' | 'boss' | 'chat'
@@ -22,6 +24,7 @@ export default function GuildScreen({ navigation }: any) {
   const { playerState } = useGameStore()
   const { fetchPlayerState } = useGame()
   const [userId,       setUserId]       = useState<string | null>(null)
+  const [actionMenuPlayer, setActionMenuPlayer] = useState<any | null>(null)
   const [guildData,    setGuildData]    = useState<any>(null)
   const [searchResults,setSearchResults]= useState<any[]>([])
   const [messages,     setMessages]     = useState<any[]>([])
@@ -32,6 +35,40 @@ export default function GuildScreen({ navigation }: any) {
   const [refreshing,   setRefreshing]   = useState(false)
   const [loading,      setLoading]      = useState(false)
   const [bossLoading,  setBossLoading]  = useState(false)
+  // ✅ Reward claim state
+  const [claimLoading, setClaimLoading] = useState(false)
+  const [rewardModal,  setRewardModal]  = useState<any>(null)
+    // ✅ Boss reward claim
+    const handleClaimReward = async () => {
+      if (!userId || !bossData?.boss?.id || claimLoading) return
+      setClaimLoading(true)
+      const { data } = await supabase.rpc('claim_guild_boss_reward', {
+        p_player_id: userId,
+        p_boss_id:   bossData.boss.id,
+      })
+      setClaimLoading(false)
+
+      if (data?.success) {
+        // Modal'ı aç
+        setRewardModal({
+          contribution_pct: data.contribution_pct,
+          gold:  data.gold,
+          scrap: data.scrap,
+          rc:    data.rc,
+          rank:  data.rank,
+        })
+        // Player state ve boss state'i yenile
+        await fetchPlayerState(userId)
+        const guildId = playerState?.guild?.id
+        if (guildId) await loadBoss(guildId)
+      } else {
+        const msg = data?.error === 'BOSS_NOT_DEFEATED'   ? 'Boss is not defeated yet.'
+                  : data?.error === 'ALREADY_CLAIMED'     ? 'You already claimed this reward.'
+                  : data?.error === 'NO_CONTRIBUTION'     ? 'You did not attack this boss.'
+                  : data?.error || 'Failed'
+        ThemedAlert.alert('Cannot Claim', msg)
+      }
+    }
   const [showCreate,   setShowCreate]   = useState(false)
   const [showSearch,   setShowSearch]   = useState(false)
   const [guildName,    setGuildName]    = useState('')
@@ -85,7 +122,7 @@ export default function GuildScreen({ navigation }: any) {
   }
 
   const handleCreateGuild = async () => {
-    if (!userId || !guildName.trim()) { Alert.alert('Error', 'Guild name required!'); return }
+    if (!userId || !guildName.trim()) { ThemedAlert.alert('Error', 'Guild name required!'); return }
     setLoading(true)
     const { data } = await supabase.rpc('create_guild', {
       p_player_id: userId, p_name: guildName.trim(), p_description: guildDesc.trim(),
@@ -97,18 +134,18 @@ export default function GuildScreen({ navigation }: any) {
         : data?.error === 'INSUFFICIENT_GOLD' ? 'Need 1,000 Gold to create a guild!'
         : data?.error === 'ALREADY_IN_GUILD'  ? 'You are already in a guild!'
         : data?.error || 'Failed to create guild'
-      Alert.alert('Error', msg)
+      ThemedAlert.alert('Error', msg)
     }
   }
 
   const handleJoinGuild = async (guildId: string, name: string) => {
     if (!userId) return
-    Alert.alert(`Join ${name}?`, 'Are you sure?', [
+    ThemedAlert.alert(`Join ${name}?`, 'Are you sure?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'JOIN', onPress: async () => {
         const { data } = await supabase.rpc('join_guild', { p_player_id: userId, p_guild_id: guildId })
         if (data?.success) { setShowSearch(false); await loadData() }
-        else Alert.alert('Error', data?.error === 'LEVEL_TOO_LOW'
+        else ThemedAlert.alert('Error', data?.error === 'LEVEL_TOO_LOW'
           ? `Level too low! Required: ${data.required}` : data?.error || 'Failed')
       }}
     ])
@@ -116,12 +153,12 @@ export default function GuildScreen({ navigation }: any) {
 
   const handleLeaveGuild = async () => {
     if (!userId) return
-    Alert.alert('Leave Guild', 'Are you sure?', [
+    ThemedAlert.alert('Leave Guild', 'Are you sure?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'LEAVE', style: 'destructive', onPress: async () => {
         const { data } = await supabase.rpc('leave_guild', { p_player_id: userId })
         if (data?.success) { setGuildData(null); setMessages([]); setBossData(null); await fetchPlayerState(userId) }
-        else Alert.alert('Error', data?.error || 'Failed')
+        else ThemedAlert.alert('Error', data?.error || 'Failed')
       }}
     ])
   }
@@ -130,17 +167,17 @@ export default function GuildScreen({ navigation }: any) {
     if (!userId) return
     const gold = playerState?.player?.gold || 0
     const donateAmount = Math.min(10000, gold)
-    if (donateAmount < 100) { Alert.alert('Insufficient Gold', 'You need at least 100 Gold.'); return }
-    Alert.alert('🪙 Donate to Guild', `Donate ${donateAmount.toLocaleString()} Gold?`, [
+    if (donateAmount < 100) { ThemedAlert.alert('Insufficient Gold', 'You need at least 100 Gold.'); return }
+    ThemedAlert.alert('🪙 Donate to Guild', `Donate ${donateAmount.toLocaleString()} Gold?`, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'DONATE', onPress: async () => {
         const { data } = await supabase.rpc('donate_to_guild', { p_player_id: userId, p_gold_amount: donateAmount })
         if (data?.success) {
           let msg = `${data.donated.toLocaleString()} Gold donated!`
           if (data.leveled_up) msg += `\n\n🎉 Guild leveled up to ${data.guild_level}!`
-          Alert.alert('✅ Donated!', msg); await loadData()
+          ThemedAlert.alert('✅ Donated!', msg); await loadData()
         } else {
-          Alert.alert('Error', data?.error === 'DAILY_LIMIT_REACHED' ? 'Daily limit reached!'
+          ThemedAlert.alert('Error', data?.error === 'DAILY_LIMIT_REACHED' ? 'Daily limit reached!'
             : data?.error || 'Failed')
         }
       }}
@@ -171,31 +208,59 @@ export default function GuildScreen({ navigation }: any) {
       const guildId = playerState?.guild?.id || guildData?.guild?.id
       if (guildId) await loadBoss(guildId)
       if (data.is_kill) {
-        Alert.alert('💥 BOSS DEFEATED!',
+        ThemedAlert.alert('💥 BOSS DEFEATED!',
           `You dealt the killing blow!\n\n+${data.reward_gold.toLocaleString()} Gold\n+${data.reward_scrap} Scrap`)
       }
     } else {
       const msg = data?.error === 'ALREADY_ATTACKED_TODAY' ? 'Already attacked today! Come back tomorrow.'
         : data?.error === 'BOSS_ALREADY_DEFEATED'          ? 'Boss is already defeated!'
         : data?.error || 'Attack failed'
-      Alert.alert('Error', msg)
+      ThemedAlert.alert('Error', msg)
     }
   }
 
   const handleSendMessage = async () => {
-    if (!userId || !messageText.trim()) return
-    const { data } = await supabase.rpc('send_guild_message', { p_player_id: userId, p_message: messageText.trim() })
-    if (data?.success) { setMessageText(''); await loadChat(userId); setTimeout(() => flatListRef.current?.scrollToEnd(), 100) }
+    if (!messageText.trim() || !userId) return
+
+    const text = messageText.trim()
+    setMessageText('')
+
+    // ✅ Optimistic update: hemen göster
+    const tempMsg = {
+      id: `temp-${Date.now()}`,
+      player_id: userId,
+      username:  playerState?.player?.username ?? 'You',
+      message:   text,
+      created_at: new Date().toISOString(),
+    }
+    setMessages((prev: any[]) => [...prev, tempMsg])
+    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 50)
+
+    const { data, error } = await supabase.rpc('send_guild_message', {
+      p_player_id: userId,
+      p_message:   text,
+    })
+
+    if (error || !data?.success) {
+      // Başarısız → geri al
+      setMessages((prev: any[]) => prev.filter(m => m.id !== tempMsg.id))
+      const errMsg =
+        data?.error === 'SLOW_DOWN' ? 'Wait 3 seconds between messages!' :
+        data?.error === 'MESSAGE_TOO_LONG' ? 'Message too long (max 200 chars)!' :
+        error?.message || 'Failed to send'
+      ThemedAlert.alert('Error', errMsg)
+      setMessageText(text) // geri koy
+    }
   }
 
   const handleKick = async (targetId: string, targetName: string) => {
     if (!userId) return
-    Alert.alert('Kick Member', `Remove ${targetName}?`, [
+    ThemedAlert.alert('Kick Member', `Remove ${targetName}?`, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'KICK', style: 'destructive', onPress: async () => {
         const { data } = await supabase.rpc('kick_guild_member', { p_leader_id: userId, p_target_id: targetId })
         if (data?.success) await loadData()
-        else Alert.alert('Error', data?.error || 'Failed')
+        else ThemedAlert.alert('Error', data?.error || 'Failed')
       }}
     ])
   }
@@ -204,9 +269,9 @@ export default function GuildScreen({ navigation }: any) {
     if (!userId) return
     Alert.prompt('Set Min Level', 'Minimum level to join (1-100):', async (value) => {
       const level = parseInt(value)
-      if (isNaN(level) || level < 1 || level > 100) { Alert.alert('Error', 'Enter 1-100'); return }
+      if (isNaN(level) || level < 1 || level > 100) { ThemedAlert.alert('Error', 'Enter 1-100'); return }
       const { data } = await supabase.rpc('set_guild_min_level', { p_leader_id: userId, p_min_level: level })
-      if (data?.success) { await loadData(); Alert.alert('✅', `Min level set to ${level}`) }
+      if (data?.success) { await loadData(); ThemedAlert.alert('✅', `Min level set to ${level}`) }
     }, 'plain-text', String(guildData?.guild?.min_level || 1), 'numeric')
   }
 
@@ -416,7 +481,7 @@ export default function GuildScreen({ navigation }: any) {
               </View>
             ))}
           </View>
-          {isLeader && (
+          {!!(isLeader) && (
             <View style={styles.infoCard}>
               <Text style={styles.infoLabel}>⚙️ GUILD SETTINGS</Text>
               <TouchableOpacity style={styles.settingBtn} onPress={handleSetMinLevel}>
@@ -433,6 +498,16 @@ export default function GuildScreen({ navigation }: any) {
           contentContainerStyle={{ padding: 16 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.neonGreen} />}
           renderItem={({ item }) => (
+            <TouchableOpacity
+              onPress={() => item.player_id !== userId && setActionMenuPlayer({
+                player_id: item.player_id,
+                username: item.username,
+                class_type: item.class_type,
+                level: item.level,
+              })}
+              activeOpacity={0.7}
+              disabled={item.player_id === userId}
+            >
             <View style={styles.memberCard}>
               <View style={styles.memberLeft}>
                 <View style={styles.memberRoleBadge}>
@@ -457,6 +532,7 @@ export default function GuildScreen({ navigation }: any) {
                 )}
               </View>
             </View>
+            </TouchableOpacity>
           )}
         />
       )}
@@ -499,7 +575,7 @@ export default function GuildScreen({ navigation }: any) {
                 </View>
                 <Text style={styles.bossHpPct}>{(100 - hpPct).toFixed(1)}% damage dealt</Text>
 
-                {/* Attack button */}
+                {/* Attack button (boss alive) */}
                 {!boss.is_defeated && (
                   <TouchableOpacity
                     style={[
@@ -519,6 +595,47 @@ export default function GuildScreen({ navigation }: any) {
                       <Text style={styles.attackBtnSub}>1 attack remaining today</Text>
                     )}
                   </TouchableOpacity>
+                )}
+
+                {/* ✅ Claim Reward button (boss defeated) */}
+                {boss.is_defeated && (
+                  <>
+                    {bossData?.my_contribution > 0 && !bossData?.my_reward_claimed && (
+                      <TouchableOpacity
+                        style={[styles.claimBtn, claimLoading && styles.attackBtnUsed]}
+                        onPress={handleClaimReward}
+                        disabled={claimLoading}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={styles.claimBtnText}>
+                          {claimLoading ? 'CLAIMING...' : '🎁 CLAIM REWARDS'}
+                        </Text>
+                        <Text style={styles.attackBtnSub}>
+                          Rank #{bossData.my_rank} • {((bossData.my_contribution / boss.hp_max) * 100).toFixed(1)}% contribution
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+
+                    {bossData?.my_contribution > 0 && bossData?.my_reward_claimed && (
+                      <View style={styles.claimedBox}>
+                        <Text style={styles.claimedText}>✅ REWARD CLAIMED</Text>
+                        <Text style={styles.attackBtnSub}>
+                          Rank #{bossData.my_rank} • Next boss spawns next week
+                        </Text>
+                      </View>
+                    )}
+
+                    {bossData?.my_contribution === 0 && (
+                      <View style={styles.claimedBox}>
+                        <Text style={[styles.claimedText, { color: COLORS.textMuted }]}>
+                          NO CONTRIBUTION
+                        </Text>
+                        <Text style={styles.attackBtnSub}>
+                          You did not attack this boss
+                        </Text>
+                      </View>
+                    )}
+                  </>
                 )}
               </View>
 
@@ -558,6 +675,49 @@ export default function GuildScreen({ navigation }: any) {
               <Text style={{ color: COLORS.textMuted, fontSize: 13 }}>Loading boss...</Text>
             </View>
           )}
+
+          {/* ✅ REWARD MODAL */}
+          <Modal
+            visible={!!rewardModal}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setRewardModal(null)}
+          >
+            <View style={styles.modalBg}>
+              <View style={styles.modalCard}>
+                <Text style={styles.modalIcon}>🎉</Text>
+                <Text style={styles.modalTitle}>BOSS DEFEATED</Text>
+                <Text style={styles.modalSub}>
+                  Rank #{rewardModal?.rank} • {rewardModal?.contribution_pct}% contribution
+                </Text>
+
+                <View style={styles.rewardsList}>
+                  <View style={styles.rewardLine}>
+                    <Text style={styles.rewardLabel}>🪙 GOLD</Text>
+                    <Text style={styles.rewardValue}>+{rewardModal?.gold?.toLocaleString()}</Text>
+                  </View>
+                  <View style={styles.rewardLine}>
+                    <Text style={styles.rewardLabel}>🔩 SCRAP METAL</Text>
+                    <Text style={styles.rewardValue}>+{rewardModal?.scrap?.toLocaleString()}</Text>
+                  </View>
+                  {rewardModal?.rc > 0 && (
+                    <View style={[styles.rewardLine, styles.rewardLineHighlight]}>
+                      <Text style={[styles.rewardLabel, { color: COLORS.neonGreen }]}>💎 RIFT CRYSTALS (TOP 3)</Text>
+                      <Text style={[styles.rewardValue, { color: COLORS.neonGreen }]}>+{rewardModal.rc}</Text>
+                    </View>
+                  )}
+                </View>
+
+                <TouchableOpacity
+                  style={styles.modalBtn}
+                  onPress={() => setRewardModal(null)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.modalBtnText}>AWESOME!</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
         </ScrollView>
       )}
 
@@ -592,6 +752,18 @@ export default function GuildScreen({ navigation }: any) {
           </View>
         </KeyboardAvoidingView>
       )}
+    {!!(actionMenuPlayer) && (
+      <PlayerActionMenu
+        visible={!!actionMenuPlayer}
+        onClose={() => setActionMenuPlayer(null)}
+        targetPlayerId={actionMenuPlayer.player_id}
+        targetUsername={actionMenuPlayer.username}
+        targetClassType={actionMenuPlayer.class_type}
+        targetLevel={actionMenuPlayer.level}
+        navigation={navigation}
+        currentUserId={userId}
+      />
+    )}
     </View>
   )
 }
@@ -689,6 +861,77 @@ const styles = StyleSheet.create({
   attackBtnUsed:    { backgroundColor:'rgba(255,255,255,0.05)', borderWidth:1, borderColor:COLORS.border },
   attackBtnText:    { fontSize:15, fontWeight:'900', color:'#fff', letterSpacing:2 },
   attackBtnSub:     { fontSize:9, color:'rgba(255,255,255,0.6)', marginTop:3 },
+
+  // ✅ Boss reward styles
+  claimBtn: {
+    backgroundColor: COLORS.neonGreen,
+    borderRadius: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  claimBtnText: {
+    fontSize: 14, fontWeight: '900', letterSpacing: 2, color: COLORS.bg,
+  },
+  claimedBox: {
+    backgroundColor: COLORS.bgPanel,
+    borderRadius: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  claimedText: {
+    fontSize: 12, fontWeight: '900', letterSpacing: 2, color: COLORS.neonGreen,
+  },
+  modalBg: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: COLORS.bgCard,
+    borderWidth: 2,
+    borderColor: COLORS.neonGreen,
+    borderRadius: 12,
+    padding: 24,
+    alignItems: 'center',
+  },
+  modalIcon: { fontSize: 48, marginBottom: 8 },
+  modalTitle: {
+    fontSize: 22, fontWeight: '900', letterSpacing: 4,
+    color: COLORS.textPrimary, marginBottom: 4,
+  },
+  modalSub: {
+    fontSize: 11, color: COLORS.textSecondary,
+    letterSpacing: 1, marginBottom: 20,
+  },
+  rewardsList: { width: '100%', gap: 8, marginBottom: 20 },
+  rewardLine: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    backgroundColor: COLORS.bgPanel, padding: 12, borderRadius: 6,
+    borderWidth: 1, borderColor: COLORS.border,
+  },
+  rewardLineHighlight: {
+    borderColor: COLORS.neonGreen,
+    backgroundColor: 'rgba(0,255,136,0.08)',
+  },
+  rewardLabel: { fontSize: 11, fontWeight: '700', color: COLORS.textPrimary, letterSpacing: 1 },
+  rewardValue: { fontSize: 16, fontWeight: '900', color: '#FFD700' },
+  modalBtn: {
+    backgroundColor: COLORS.neonGreen, borderRadius: 6,
+    paddingVertical: 12, paddingHorizontal: 32,
+  },
+  modalBtnText: {
+    fontSize: 13, fontWeight: '900', letterSpacing: 3, color: COLORS.bg,
+  },
   rankCard:         { backgroundColor:COLORS.bgCard, borderRadius:12, borderWidth:1, borderColor:COLORS.border, padding:14, marginBottom:12 },
   rankTitle:        { fontSize:9, color:COLORS.textMuted, letterSpacing:3, marginBottom:12, fontWeight:'700' },
   rankRow:          { flexDirection:'row', alignItems:'center', marginBottom:8, gap:6 },
