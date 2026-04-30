@@ -253,7 +253,7 @@ export default function InventoryScreen() {
     // Items — enhancement_level dahil
     const { data: invData } = await supabase
       .from('items')
-      .select(`id, item_type, rarity, level, base_attack, power_score,
+      .select(`id, item_type, rarity, level, tier, base_attack, power_score,
                is_equipped, is_locked, source, enhancement_level,
                item_affixes (affix_type, value)`)
       .eq('player_id', user.id)
