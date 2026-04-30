@@ -1,17 +1,17 @@
 // =============================================
-// ECHO RIFT — RARITY AURA (v4, thermals-fix)
-// Strategy:
-//   Common/Uncommon/Rare/Epic → 100% static visual (zero animation cost).
-//     A coloured border + native shadow gives a "neon" look without any
-//     per-frame work. Inventories can hold dozens of these — at zero CPU.
-//   Legendary → single opacity pulse, useNativeDriver=true (GPU only).
-//   Dimensional → opacity pulse + slow RGB color shift (one JS-driver
-//     animation, acceptable because the item is rare).
+// ECHO RIFT — RARITY AURA (v5, neon + cool)
+// All rarities (Uncommon+) get a neon pulse, but only the OPACITY
+// animates. useNativeDriver=true so the work runs on the GPU/UI
+// thread, not the JS thread. borderWidth + borderColor stay static,
+// so there's no layout recalc per frame either.
 //
-// Why the previous version overheated: borderWidth + borderColor are
-// layout/style props, useNativeDriver MUST be false → every frame ran
-// on the JS thread. With 50 cards in a FlatList that's 50 parallel
-// JS animations recalculating layout 60×/sec.
+// Result: 50 items in a FlatList = 50 GPU opacity animations, near-
+// zero CPU cost. The JS thread sits idle.
+//
+// Dimensional adds one extra RGB color cycle — that one needs JS
+// driver (color interpolation), but Dimensional drops are rare and
+// FlatList's removeClippedSubviews+windowSize keep the active set
+// small.
 // =============================================
 
 import React, { useEffect, useRef } from 'react'
@@ -24,94 +24,63 @@ interface Props {
   borderRadius?: number
 }
 
+interface Config {
+  width: number
+  minOp: number
+  maxOp: number
+  shadowOpacity: number
+  shadowRadius: number
+  elevation: number
+  cycleMs: number
+}
+
+const CONFIG: Partial<Record<Rarity, Config>> = {
+  Uncommon:    { width: 1.4, minOp: 0.50, maxOp: 0.90, shadowOpacity: 0.55, shadowRadius: 4, elevation: 3, cycleMs: 1300 },
+  Rare:        { width: 1.7, minOp: 0.55, maxOp: 0.95, shadowOpacity: 0.65, shadowRadius: 5, elevation: 4, cycleMs: 1200 },
+  Epic:        { width: 2.0, minOp: 0.55, maxOp: 1.00, shadowOpacity: 0.75, shadowRadius: 6, elevation: 5, cycleMs: 1100 },
+  Legendary:   { width: 2.3, minOp: 0.40, maxOp: 1.00, shadowOpacity: 0.85, shadowRadius: 7, elevation: 6, cycleMs: 1000 },
+  Dimensional: { width: 2.6, minOp: 0.40, maxOp: 1.00, shadowOpacity: 1.00, shadowRadius: 9, elevation: 8, cycleMs: 950 },
+}
+
 export function RarityAura({ rarity, children, borderRadius = 8 }: Props) {
-  // Common: render children unchanged. Cheapest possible.
   if (rarity === 'Common') {
     return <View style={{ position: 'relative' }}>{children}</View>
   }
 
   const color = RARITY_COLORS[rarity] || '#888'
-
-  // Static tier — no animation at all.
-  if (rarity === 'Uncommon' || rarity === 'Rare' || rarity === 'Epic') {
-    const width  = rarity === 'Epic' ? 2.0 : rarity === 'Rare' ? 1.7 : 1.4
-    const radius = rarity === 'Epic' ? 6 : rarity === 'Rare' ? 5 : 4
-    const opacity = rarity === 'Epic' ? 0.65 : rarity === 'Rare' ? 0.55 : 0.45
-    return (
-      <View style={{ position: 'relative' }}>
-        {children}
-        <View
-          pointerEvents="none"
-          style={[StyleSheet.absoluteFill, {
-            borderRadius,
-            borderWidth: width,
-            borderColor: color,
-            shadowColor: color,
-            shadowOpacity: opacity,
-            shadowRadius: radius,
-            shadowOffset: { width: 0, height: 0 },
-            elevation: 4, // android shadow approximation
-          }]}
-        />
-      </View>
-    )
+  const cfg = CONFIG[rarity]
+  if (!cfg) {
+    return <View style={{ position: 'relative' }}>{children}</View>
   }
 
-  // Legendary: static border + ONE opacity-only pulse (native driver).
-  if (rarity === 'Legendary') {
-    return (
-      <View style={{ position: 'relative' }}>
-        {children}
-        {/* Static base border */}
-        <View
-          pointerEvents="none"
-          style={[StyleSheet.absoluteFill, {
-            borderRadius,
-            borderWidth: 2.2,
-            borderColor: color,
-            shadowColor: color,
-            shadowOpacity: 0.85,
-            shadowRadius: 7,
-            shadowOffset: { width: 0, height: 0 },
-            elevation: 6,
-          }]}
-        />
-        {/* Animated overlay — opacity only, runs on GPU */}
-        <PulseOverlay color={color} borderRadius={borderRadius} />
-      </View>
-    )
-  }
-
-  // Dimensional: static border + opacity pulse + RGB cycle (premium tier).
   return (
     <View style={{ position: 'relative' }}>
       {children}
-      <View
-        pointerEvents="none"
-        style={[StyleSheet.absoluteFill, {
-          borderRadius,
-          borderWidth: 2.6,
-          borderColor: color,
-          shadowColor: color,
-          shadowOpacity: 1.0,
-          shadowRadius: 9,
-          shadowOffset: { width: 0, height: 0 },
-          elevation: 8,
-        }]}
-      />
-      <PulseOverlay color={color} borderRadius={borderRadius} />
-      <RgbShiftBorder borderRadius={borderRadius} />
+      <PulseBorder color={color} borderRadius={borderRadius} cfg={cfg} />
+      {rarity === 'Dimensional' && <RgbShiftBorder borderRadius={borderRadius} />}
     </View>
   )
 }
 
-// ─── PULSE OVERLAY — opacity only, GPU friendly ─────────────────────────────
-function PulseOverlay({ color, borderRadius }: { color: string; borderRadius: number }) {
-  const opacity = useRef(new Animated.Value(0.35)).current
+// ─── PULSE BORDER — opacity-only, GPU thread ────────────────────────────────
+function PulseBorder({
+  color, borderRadius, cfg,
+}: { color: string; borderRadius: number; cfg: Config }) {
+  const opacity = useRef(new Animated.Value(cfg.minOp)).current
   useEffect(() => {
     const loop = Animated.loop(Animated.sequence([
-      Animated.timing(opacity, { toValue: 1.0,  duration: 1100, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-      Animated.timing(opacity, { toValue: 0.35, duration: 1100, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+      Animated.timing(opacity, {
+        toValue: cfg.maxOp,
+        duration: cfg.cycleMs,
+        easing: Easing.inOut(Easing.sin),
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacity, {
+        toValue: cfg.minOp,
+        duration: cfg.cycleMs,
+        easing: Easing.inOut(Easing.sin),
+        useNativeDriver: true,
+      }),
     ]))
     loop.start()
     return () => loop.stop()
@@ -121,17 +90,20 @@ function PulseOverlay({ color, borderRadius }: { color: string; borderRadius: nu
       pointerEvents="none"
       style={[StyleSheet.absoluteFill, {
         borderRadius,
-        borderWidth: 1.5,
+        borderWidth: cfg.width,
         borderColor: color,
+        shadowColor: color,
+        shadowOpacity: cfg.shadowOpacity,
+        shadowRadius: cfg.shadowRadius,
+        shadowOffset: { width: 0, height: 0 },
+        elevation: cfg.elevation,
         opacity,
       }]}
     />
   )
 }
 
-// ─── RGB SHIFT — Dimensional only ───────────────────────────────────────────
-// Only color animation in the system. Single Dimensional usually < 5 in
-// inventory, so cost is bounded.
+// ─── DIMENSIONAL: RGB COLOR CYCLE ───────────────────────────────────────────
 function RgbShiftBorder({ borderRadius }: { borderRadius: number }) {
   const t = useRef(new Animated.Value(0)).current
   useEffect(() => {
