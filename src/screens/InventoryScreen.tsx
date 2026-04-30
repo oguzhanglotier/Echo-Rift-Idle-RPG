@@ -19,6 +19,7 @@ import { getItemImage } from '../constants/itemImages'
 import { Rarity, ClassType } from '../types'
 import { ThemedAlert } from '../components/ThemedAlert'
 import { TierBadge } from '../components/TierBadge'
+import { RarityAura } from '../components/RarityAura'
 
 const { width, height } = Dimensions.get('window')
 const GRID_PAD  = 12
@@ -106,38 +107,45 @@ function EquipSlot({ slotType, item, onPress, classType }: {
     return () => loop.stop()
   }, [item?.id])
 
+  const slotInner = (
+    <View style={[styles.slot, { borderColor: rc, backgroundColor: item ? RARITY_BG[item.rarity] || 'transparent' : 'rgba(255,255,255,0.03)' }]}>
+      {item ? (
+        <>
+          {/* Görsel — tam slot'u doldurur */}
+          {(() => {
+            if (item.item_type === 'sword' && SWORD_IMAGES_BG[item.rarity]) {
+              return <Image source={SWORD_IMAGES_BG[item.rarity]} style={styles.slotSwordImg} resizeMode="contain" />
+            }
+            const classImg = getItemImage(classType, item.item_type)
+            if (classImg) {
+              return <Image source={classImg} style={styles.slotItemImg} resizeMode="cover" />
+            }
+            return <Text style={styles.slotIcon}>{SLOT_ICONS[slotType]}</Text>
+          })()}
+          {/* Badge'ler — absolute, görsel üstünde */}
+          {item.enhancement_level > 0 && (
+            <View style={styles.slotEnhBadge}>
+              <Text style={styles.slotEnhText}>+{item.enhancement_level}</Text>
+            </View>
+          )}
+          <Text style={styles.slotLevel}>L{item.level}</Text>
+        </>
+      ) : (
+        <>
+          <Text style={[styles.slotIcon, { opacity: 0.2 }]}>{SLOT_ICONS[slotType]}</Text>
+          <Text style={styles.slotEmpty}>{SLOT_LABELS[slotType]}</Text>
+        </>
+      )}
+    </View>
+  )
+
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.75} style={styles.slotWrap}>
-      <View style={[styles.slot, { borderColor: rc, backgroundColor: item ? RARITY_BG[item.rarity] || 'transparent' : 'rgba(255,255,255,0.03)' }]}>
-        {!!(item) && <Animated.View style={[styles.slotGlow, { borderColor: rc, opacity: pulseAnim }]} />}
-        {item ? (
-          <>
-            {/* Görsel — tam slot'u doldurur */}
-            {(() => {
-              if (item.item_type === 'sword' && SWORD_IMAGES_BG[item.rarity]) {
-                return <Image source={SWORD_IMAGES_BG[item.rarity]} style={styles.slotSwordImg} resizeMode="contain" />
-              }
-              const classImg = getItemImage(classType, item.item_type)
-              if (classImg) {
-                return <Image source={classImg} style={styles.slotItemImg} resizeMode="cover" />
-              }
-              return <Text style={styles.slotIcon}>{SLOT_ICONS[slotType]}</Text>
-            })()}
-            {/* Badge'ler — absolute, görsel üstünde */}
-            {item.enhancement_level > 0 && (
-              <View style={styles.slotEnhBadge}>
-                <Text style={styles.slotEnhText}>+{item.enhancement_level}</Text>
-              </View>
-            )}
-            <Text style={styles.slotLevel}>L{item.level}</Text>
-          </>
-        ) : (
-          <>
-            <Text style={[styles.slotIcon, { opacity: 0.2 }]}>{SLOT_ICONS[slotType]}</Text>
-            <Text style={styles.slotEmpty}>{SLOT_LABELS[slotType]}</Text>
-          </>
-        )}
-      </View>
+      {item ? (
+        <RarityAura rarity={item.rarity as Rarity} size={84} borderRadius={6}>
+          {slotInner}
+        </RarityAura>
+      ) : slotInner}
     </TouchableOpacity>
   )
 }
@@ -595,28 +603,31 @@ export default function InventoryScreen() {
             const bg = RARITY_BG[item.rarity] || 'rgba(255,255,255,0.04)'
             return (
               <TouchableOpacity
-                style={[styles.itemCard, { borderColor: rc + '70', backgroundColor: bg }]}
                 onPress={() => setSelectedItem(item)}
                 onLongPress={() => handleToggleLock(item)}
                 activeOpacity={0.75}
               >
-                {!!(item.is_locked) && <Text style={styles.itemLock}>🔒</Text>}
-                {item.enhancement_level > 0 && (
-                  <View style={[styles.itemEnhBadge, { backgroundColor: rc + '33', borderColor: rc + '80' }]}>
-                    <Text style={[styles.itemEnhText, { color: rc }]}>+{item.enhancement_level}</Text>
+                <RarityAura rarity={item.rarity as Rarity} size={88} borderRadius={6} reduced>
+                  <View style={[styles.itemCard, { borderColor: rc + '70', backgroundColor: bg }]}>
+                    {!!(item.is_locked) && <Text style={styles.itemLock}>🔒</Text>}
+                    {item.enhancement_level > 0 && (
+                      <View style={[styles.itemEnhBadge, { backgroundColor: rc + '33', borderColor: rc + '80' }]}>
+                        <Text style={[styles.itemEnhText, { color: rc }]}>+{item.enhancement_level}</Text>
+                      </View>
+                    )}
+                    {(() => {
+                      if (item.item_type === 'sword' && SWORD_IMAGES_BG[item.rarity]) {
+                        return <Image source={SWORD_IMAGES_BG[item.rarity]} style={styles.itemSwordImg} resizeMode="cover" />
+                      }
+                      const classImg = getItemImage(classType, item.item_type)
+                      if (classImg) {
+                        return <Image source={classImg} style={styles.itemClassImg} resizeMode="cover" />
+                      }
+                      return <Text style={styles.itemIcon}>{SLOT_ICONS[item.item_type] || '?'}</Text>
+                    })()}
+                    <Text style={styles.itemLevel}>L{item.level}</Text>
                   </View>
-                )}
-                {(() => {
-                  if (item.item_type === 'sword' && SWORD_IMAGES_BG[item.rarity]) {
-                    return <Image source={SWORD_IMAGES_BG[item.rarity]} style={styles.itemSwordImg} resizeMode="cover" />
-                  }
-                  const classImg = getItemImage(classType, item.item_type)
-                  if (classImg) {
-                    return <Image source={classImg} style={styles.itemClassImg} resizeMode="cover" />
-                  }
-                  return <Text style={styles.itemIcon}>{SLOT_ICONS[item.item_type] || '?'}</Text>
-                })()}
-                <Text style={styles.itemLevel}>L{item.level}</Text>
+                </RarityAura>
               </TouchableOpacity>
             )
           }}
@@ -700,7 +711,8 @@ export default function InventoryScreen() {
                   )}
 
                   <View style={styles.hCardBody}>
-                    {/* SOL: Kare görsel */}
+                    {/* SOL: Kare görsel — RarityAura entegre */}
+                    <RarityAura rarity={item.rarity as Rarity} size={92} borderRadius={6}>
                     <View style={[styles.hImgFrame, { borderColor: color + '60' }]}>
                       {renderImg(item, styles.hImg, styles.hFallback)}
                       <View style={styles.hEnhBadge}>
@@ -715,6 +727,7 @@ export default function InventoryScreen() {
                       )}
                       <Text style={styles.hLvl}>L{item.level}</Text>
                     </View>
+                    </RarityAura>
 
                     {/* SAĞ: Stat listesi */}
                     <View style={styles.hStats}>
