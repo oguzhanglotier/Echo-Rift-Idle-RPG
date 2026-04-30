@@ -18,6 +18,7 @@ import { COLORS, RARITY_COLORS, CLASS_INFO } from '../constants'
 import { getItemImage } from '../constants/itemImages'
 import { Rarity, ClassType } from '../types'
 import { ThemedAlert } from '../components/ThemedAlert'
+import { TierBadge } from '../components/TierBadge'
 
 const { width, height } = Dimensions.get('window')
 const GRID_PAD  = 12
@@ -484,7 +485,10 @@ export default function InventoryScreen() {
       {/* HEADER */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.headerTitle}>INVENTORY</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Text style={styles.headerTitle}>INVENTORY</Text>
+            <TierBadge tier={player?.prestige_tier} size="sm" />
+          </View>
           <Text style={styles.headerSub}>{player?.inventory_count || 0}/200 items</Text>
         </View>
         <View style={styles.headerRight}>

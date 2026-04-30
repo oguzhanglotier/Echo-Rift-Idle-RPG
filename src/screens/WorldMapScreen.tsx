@@ -23,6 +23,7 @@ import LevelUpModal from '../components/LevelUpModal'
 import DailyLoginModal from '../components/DailyLoginModal'
 import QuestBottomSheet from '../components/QuestBottomSheet'
 import AfkRewardModal from '../components/AfkRewardModal'
+import { TierBadge } from '../components/TierBadge'
 import { ThemedAlert } from '../components/ThemedAlert'
 
 const { width, height } = Dimensions.get('window')
@@ -492,7 +493,10 @@ export default function WorldMapScreen() {
             )}
           </View>
           <View>
-            <Text style={styles.profileName}>{player.username}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={styles.profileName}>{player.username}</Text>
+              <TierBadge tier={player.prestige_tier} size="xs" />
+            </View>
             <Text style={[styles.profileClass, { color: classInfo?.color || COLORS.neonGreen }]}>
               LVL {player.level} {classInfo?.name?.toUpperCase()}
             </Text>

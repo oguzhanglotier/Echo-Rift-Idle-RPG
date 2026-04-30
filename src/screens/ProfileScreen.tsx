@@ -16,6 +16,7 @@ import { useGame } from '../hooks/useGame'
 import { COLORS, CLASS_INFO, PRESTIGE } from '../constants'
 import { ThemedAlert } from '../components/ThemedAlert'
 import { RebirthModal } from '../components/RebirthModal'
+import { TierBadge } from '../components/TierBadge'
 
 const { width } = Dimensions.get('window')
 const CORNER = 10
@@ -208,7 +209,10 @@ export default function ProfileScreen({ navigation }: any) {
             {/* Bilgiler */}
             <View style={styles.profileInfo}>
               <TouchableOpacity onPress={() => { setNewUsername(player.username); setShowRenameModal(true) }}>
-                <Text style={styles.username}>{player.username} <Text style={{ fontSize: 12, color: '#00D4FF' }}>✏️</Text></Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Text style={styles.username}>{player.username} <Text style={{ fontSize: 12, color: '#00D4FF' }}>✏️</Text></Text>
+                  <TierBadge tier={player.prestige_tier} size="sm" />
+                </View>
               </TouchableOpacity>
               {!!(classInfo) && (
                 <Text style={[styles.className, { color: classInfo.color }]}>
