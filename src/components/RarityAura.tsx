@@ -22,6 +22,8 @@ interface Props {
   rarity: Rarity
   children: React.ReactNode
   borderRadius?: number
+  size?: number        // wrapper View boyutu (width + height)
+  reduced?: boolean    // daha hafif animasyon (yoğun listeler için)
 }
 
 interface Config {
@@ -42,7 +44,7 @@ const CONFIG: Partial<Record<Rarity, Config>> = {
   Dimensional: { width: 2.6, minOp: 0.40, maxOp: 1.00, shadowOpacity: 1.00, shadowRadius: 9, elevation: 8, cycleMs: 950 },
 }
 
-export function RarityAura({ rarity, children, borderRadius = 8 }: Props) {
+export function RarityAura({ rarity, children, borderRadius = 8, size, reduced }: Props) {
   if (rarity === 'Common') {
     return <View style={{ position: 'relative' }}>{children}</View>
   }
@@ -56,35 +58,36 @@ export function RarityAura({ rarity, children, borderRadius = 8 }: Props) {
   return (
     <View style={{ position: 'relative' }}>
       {children}
-      <PulseBorder color={color} borderRadius={borderRadius} cfg={cfg} />
-      {rarity === 'Dimensional' && <RgbShiftBorder borderRadius={borderRadius} />}
+      <PulseBorder color={color} borderRadius={borderRadius} cfg={cfg} reduced={reduced} />
+      {rarity === 'Dimensional' && !reduced && <RgbShiftBorder borderRadius={borderRadius} />}
     </View>
   )
 }
 
 // ─── PULSE BORDER — opacity-only, GPU thread ────────────────────────────────
 function PulseBorder({
-  color, borderRadius, cfg,
-}: { color: string; borderRadius: number; cfg: Config }) {
+  color, borderRadius, cfg, reduced = false,
+}: { color: string; borderRadius: number; cfg: Config; reduced?: boolean }) {
   const opacity = useRef(new Animated.Value(cfg.minOp)).current
   useEffect(() => {
+    const ms = reduced ? cfg.cycleMs * 1.8 : cfg.cycleMs
     const loop = Animated.loop(Animated.sequence([
       Animated.timing(opacity, {
-        toValue: cfg.maxOp,
-        duration: cfg.cycleMs,
+        toValue: reduced ? cfg.maxOp * 0.7 : cfg.maxOp,
+        duration: ms,
         easing: Easing.inOut(Easing.sin),
         useNativeDriver: true,
       }),
       Animated.timing(opacity, {
         toValue: cfg.minOp,
-        duration: cfg.cycleMs,
+        duration: ms,
         easing: Easing.inOut(Easing.sin),
         useNativeDriver: true,
       }),
     ]))
     loop.start()
     return () => loop.stop()
-  }, [])
+  }, [reduced])
   return (
     <Animated.View
       pointerEvents="none"

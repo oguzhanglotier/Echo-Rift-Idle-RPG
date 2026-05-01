@@ -6,7 +6,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { NavigationContainer } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
-import { Text, View } from 'react-native'
+import { Text, View, AppState, AppStateStatus } from 'react-native'
 import AchievementsScreen from '../screens/AchievementsScreen'
 import SettingsScreen from '../screens/SettingsScreen'
 import { COLORS } from '../constants'
@@ -97,11 +97,31 @@ function MainTabs() {
   const { syncQuestQueue, fetchPlayerState } = useGame()
   const channelRef = useRef<any>(null)
   const isMounted = useRef(true)
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState)
 
   useEffect(() => {
     isMounted.current = true
     return () => { isMounted.current = false }
   }, [])
+
+  // ✅ Arka plandan dönünce sync yap
+  useEffect(() => {
+    if (!userId) return
+    const sub = AppState.addEventListener('change', async (nextState: AppStateStatus) => {
+      const prev = appStateRef.current
+      appStateRef.current = nextState
+      // background/inactive → active geçişi = arka plandan döndü
+      if ((prev === 'background' || prev === 'inactive') && nextState === 'active') {
+        try {
+          await syncQuestQueue(userId)
+          await fetchPlayerState(userId)
+        } catch {
+          // sessizce yut
+        }
+      }
+    })
+    return () => sub.remove()
+  }, [userId])
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null))

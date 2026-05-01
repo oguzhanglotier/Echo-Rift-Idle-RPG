@@ -259,6 +259,8 @@ export default function LoginScreen({ navigation }: Props) {
   const handleTestLogin = async () => {
     try {
       setLoading(true)
+      // Önce mevcut session'ı temizle (önceki hesap kalıntısı olmasın)
+      await supabase.auth.signOut()
       const { data, error } = await supabase.auth.signInWithPassword({
         email: 'test@test.com',
         password: 'test123456',

@@ -128,10 +128,9 @@ function EquipSlot({ slotType, item, onPress, classType }: {
               <Text style={styles.slotEnhText}>+{item.enhancement_level}</Text>
             </View>
           )}
-          {item.tier > 0 && (
-            <Text style={[styles.slotTierBadge, { color: rc }]}>T{item.tier}</Text>
-          )}
-          <Text style={styles.slotLevel}>L{item.level}</Text>
+          <Text style={[styles.slotCornerLabel, { color: rc }]}>
+            {item.tier > 0 ? `T${item.tier} · ` : ''}L{item.level}
+          </Text>
         </>
       ) : (
         <>
@@ -633,10 +632,9 @@ export default function InventoryScreen() {
                       }
                       return <Text style={styles.itemIcon}>{SLOT_ICONS[item.item_type] || '?'}</Text>
                     })()}
-                    {item.tier > 0 && (
-                      <Text style={[styles.itemTierBadge, { color: rc }]}>T{item.tier}</Text>
-                    )}
-                    <Text style={styles.itemLevel}>L{item.level}</Text>
+                    <Text style={[styles.itemCornerLabel, { color: rc }]}>
+                      {item.tier > 0 ? `T${item.tier} · ` : ''}L{item.level}
+                    </Text>
                   </View>
                 </RarityAura>
               </TouchableOpacity>
@@ -736,10 +734,9 @@ export default function InventoryScreen() {
                           <Text style={styles.hLockText}>🔒</Text>
                         </View>
                       )}
-                      {item.tier > 0 && (
-                        <Text style={[styles.hTierBadge, { color }]}>T{item.tier}</Text>
-                      )}
-                      <Text style={styles.hLvl}>L{item.level}</Text>
+                      <Text style={[styles.hCornerLabel, { color }]}>
+                        {item.tier > 0 ? `T${item.tier} · ` : ''}L{item.level}
+                      </Text>
                     </View>
                     </RarityAura>
 
@@ -1044,7 +1041,7 @@ const styles = StyleSheet.create({
   slotWrap:  {},
   slotIcon:  { fontSize: 22 },
   slotLevel: { position: 'absolute', bottom: 2, right: 3, fontSize: 8, color: 'rgba(255,255,255,0.8)', fontWeight: '800', zIndex: 2, textShadowColor: 'rgba(0,0,0,0.9)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
-  slotTierBadge: { position: 'absolute', bottom: 2, left: 3, fontSize: 8, fontWeight: '900', letterSpacing: 0.3, zIndex: 2, textShadowColor: 'rgba(0,0,0,0.95)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
+  slotCornerLabel: { position: 'absolute', bottom: 2, right: 3, fontSize: 8, fontWeight: '900', letterSpacing: 0.3, zIndex: 2, textShadowColor: 'rgba(0,0,0,0.95)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
   slotEmpty: { fontSize: 7, color: 'rgba(255,255,255,0.2)', letterSpacing: 0.5, marginTop: 2 },
   slotGlow:  { position: 'absolute', top: -2, left: -2, right: -2, bottom: -2, borderRadius: 10, borderWidth: 2 },
   slotSwordImg: { width: 60, height: 60 },
@@ -1082,8 +1079,7 @@ const styles = StyleSheet.create({
   itemSwordImg:  { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' },
   itemClassImg:  { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' },
   itemIcon:      { fontSize: 22 },
-  itemLevel:     { position: 'absolute', bottom: 3, right: 4, fontSize: 9, color: 'rgba(255,255,255,0.5)', fontWeight: '700' },
-  itemTierBadge: { position: 'absolute', bottom: 3, left: 4, fontSize: 9, fontWeight: '900', letterSpacing: 0.3, opacity: 0.9 },
+  itemCornerLabel: { position: 'absolute', bottom: 3, right: 4, fontSize: 9, fontWeight: '900', letterSpacing: 0.3, opacity: 0.9 },
   itemEnhBadge:  { position: 'absolute', top: 2, right: 2, borderWidth: 1, borderRadius: 3, paddingHorizontal: 3, paddingVertical: 1 },
   itemEnhText:   { fontSize: 8, fontWeight: '900' },
 
@@ -1231,7 +1227,7 @@ const styles = StyleSheet.create({
   hLockBadge:    { position: 'absolute', top: 4, right: 4, zIndex: 2 },
   hLockText:     { fontSize: 12 },
   hLvl:          { position: 'absolute', bottom: 4, right: 6, fontSize: 11, color: '#fff', fontWeight: '900', zIndex: 2, textShadowColor: 'rgba(0,0,0,0.9)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
-  hTierBadge:    { position: 'absolute', bottom: 4, left: 6, fontSize: 11, fontWeight: '900', letterSpacing: 0.3, zIndex: 2, textShadowColor: 'rgba(0,0,0,0.95)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
+  hCornerLabel:  { position: 'absolute', bottom: 4, right: 6, fontSize: 11, fontWeight: '900', letterSpacing: 0.3, zIndex: 2, textShadowColor: 'rgba(0,0,0,0.95)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
   // Sağ stat
   hStats:        { flex: 1, gap: 2 },
   hStatRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 3 },
