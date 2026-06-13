@@ -90,10 +90,9 @@ function ProfileSlot({ slotType, item, onPress, classType }: {
                 <Text style={styles.slotEnhText}>+{item.enhancement_level}</Text>
               </View>
             )}
-            {item.tier > 0 && (
-              <Text style={[styles.slotTierBadge, { color: rc }]}>T{item.tier}</Text>
-            )}
-            <Text style={styles.slotLevel}>L{item.level}</Text>
+            <Text style={[styles.slotCornerLabel, { color: item.tier > 0 ? rc : '#fff' }]}> 
+              {item.tier > 0 ? `T${item.tier} · ` : ''}L{item.level}
+            </Text>
           </>
         ) : (
           <>
@@ -554,14 +553,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4, paddingVertical: 1, zIndex: 2,
   },
   slotEnhText: { fontSize: 9, fontWeight: '900', color: '#FFD700' },
-  slotLevel: {
-    position: 'absolute', bottom: 3, right: 4,
-    fontSize: 9, color: '#fff', fontWeight: '800', zIndex: 2,
-    textShadowColor: 'rgba(0,0,0,0.9)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3,
-  },
-  slotTierBadge: {
-    position: 'absolute', bottom: 3, left: 4,
-    fontSize: 9, fontWeight: '900', letterSpacing: 0.3, zIndex: 2,
+  slotCornerLabel: {
+    position: 'absolute', bottom: 2, right: 3,
+    fontSize: 8, fontWeight: '900', letterSpacing: 0.3, zIndex: 2,
     textShadowColor: 'rgba(0,0,0,0.95)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3,
   },
 

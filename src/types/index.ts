@@ -219,6 +219,10 @@ export interface DungeonState {
   max_floor: number
   attempts_today: number
   max_attempts: number
+  extra_attempts_ad?: number
+  extra_attempts_rc?: number
+  max_extra_ad?: number
+  max_extra_rc?: number
 }
 
 export interface DungeonBattleResult {

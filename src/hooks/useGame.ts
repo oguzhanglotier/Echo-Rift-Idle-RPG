@@ -223,6 +223,36 @@ export const useGame = () => {
   }, [])
 
   // =============================================
+  // BUY DUNGEON ATTEMPT (Ad / RC)
+  // =============================================
+  const buyDungeonAttempt = useCallback(async (playerId: string, attemptType: 'ad' | 'rc') => {
+    try {
+      const { data, error } = await supabase.rpc('buy_dungeon_attempt', {
+        p_player_id: playerId,
+        p_attempt_type: attemptType,
+      })
+      if (error) throw error
+      return data as {
+        success: boolean
+        type?: 'ad' | 'rc'
+        rc_cost?: number
+        extra_attempts_ad?: number
+        extra_attempts_rc?: number
+        max_extra_ad?: number
+        max_extra_rc?: number
+        error?: string
+        required?: number
+        balance?: number
+        max?: number
+      }
+    } catch (err: any) {
+      setError(err.message)
+      console.error('buyDungeonAttempt error:', err)
+      return null
+    }
+  }, [])
+
+  // =============================================
   // ARENA — RAKİP LİSTESİ
   // =============================================
   const getArenaOpponents = useCallback(async (playerId: string) => {
@@ -734,6 +764,7 @@ export const useGame = () => {
     cancelQuest,
     syncQuestQueue,
     dungeonBattle,
+    buyDungeonAttempt,
     getArenaOpponents,
     arenaBattle,
     equipItem,

@@ -13,6 +13,7 @@ import { useGameStore } from '../store/gameStore'
 import { useGame } from '../hooks/useGame'
 import { COLORS } from '../constants'
 import { ThemedAlert } from '../components/ThemedAlert'
+import { ArrowLeft, Zap, Lock, Check, Sparkles, Gem, CircleDollarSign, ScrollText, Settings, Gift, Circle } from 'lucide-react-native'
 
 const { width } = Dimensions.get('window')
 
@@ -86,18 +87,19 @@ function getRewardLabel(r: typeof MILESTONE_REWARDS[number]): string {
   return parts.join(' + ')
 }
 
-function getRewardIcon(r: typeof MILESTONE_REWARDS[number]): string {
-  if (r.item === 'Dimensional') return '🌌'
-  if (r.item === 'Legendary')   return '🟠'
-  if (r.item === 'Epic')        return '🟣'
-  if (r.item === 'Rare')        return '🔵'
-  if (r.item === 'Uncommon')    return '🟢'
-  if (r.scroll)                 return '📜'
-  if (r.rc && r.gold)           return '✨'
-  if (r.rc)                     return '💎'
-  if (r.gold)                   return '🪙'
-  if (r.scrap)                  return '⚙️'
-  return '🎁'
+function RewardIcon({ reward }: { reward: typeof MILESTONE_REWARDS[number] }) {
+  const s = 18
+  if (reward.item === 'Dimensional') return <Sparkles size={s} color="#EC4899" />
+  if (reward.item === 'Legendary')   return <Circle size={s} color="#F97316" fill="#F97316" />
+  if (reward.item === 'Epic')        return <Circle size={s} color="#A855F7" fill="#A855F7" />
+  if (reward.item === 'Rare')        return <Circle size={s} color="#3B82F6" fill="#3B82F6" />
+  if (reward.item === 'Uncommon')    return <Circle size={s} color="#22C55E" fill="#22C55E" />
+  if (reward.scroll)                 return <ScrollText size={s} color={COLORS.textSecondary} />
+  if (reward.rc && reward.gold)      return <Sparkles size={s} color={COLORS.gold} />
+  if (reward.rc)                     return <Gem size={s} color={COLORS.gold} />
+  if (reward.gold)                   return <CircleDollarSign size={s} color={COLORS.gold} />
+  if (reward.scrap)                  return <Settings size={s} color={COLORS.textSecondary} />
+  return <Gift size={s} color={COLORS.textSecondary} />
 }
 
 export default function EchoPassScreen({ navigation }: any) {
@@ -258,8 +260,9 @@ export default function EchoPassScreen({ navigation }: any) {
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backBtn}>← BACK</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <ArrowLeft size={14} color={COLORS.textSecondary} />
+          <Text style={styles.backBtn}> BACK</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>ECHO PASS</Text>
         <View style={{ width: 60 }} />
@@ -271,9 +274,15 @@ export default function EchoPassScreen({ navigation }: any) {
         <View style={[styles.passCard, isPurchased && styles.passCardActive]}>
           <View style={styles.passCardHeader}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.passCardTitle}>
-                {isPurchased ? '⚡ ECHO PASS ACTIVE' : '🔒 ECHO PASS'}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                {isPurchased
+                  ? <Zap size={16} color={COLORS.gold} />
+                  : <Lock size={16} color={COLORS.textPrimary} />
+                }
+                <Text style={styles.passCardTitle}>
+                  {isPurchased ? 'ECHO PASS ACTIVE' : 'ECHO PASS'}
+                </Text>
+              </View>
               <Text style={styles.passCardSub}>
                 {isPurchased
                   ? 'All milestone rewards unlocked!'
@@ -311,7 +320,10 @@ export default function EchoPassScreen({ navigation }: any) {
 
           {/* Earn info */}
           <View style={styles.earnSection}>
-            <Text style={styles.earnText}>⚡ 1 stamina spent = 2 Echo Pass points</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Zap size={12} color={COLORS.textSecondary} />
+              <Text style={styles.earnText}>1 stamina spent = 2 Echo Pass points</Text>
+            </View>
           </View>
         </View>
 
@@ -361,17 +373,15 @@ export default function EchoPassScreen({ navigation }: any) {
                 canClaim   && { backgroundColor: COLORS.gold, borderColor: COLORS.gold },
                 isCurrent  && { borderColor: COLORS.gold },
               ]}>
-                <Text style={[
-                  styles.milestoneNumText,
-                  (isClaimed || canClaim) && { color: COLORS.bg },
-                ]}>
-                  {isClaimed ? '✓' : m}
-                </Text>
+                {isClaimed
+                  ? <Check size={14} color={COLORS.bg} />
+                  : <Text style={[styles.milestoneNumText, canClaim && { color: COLORS.bg }]}>{m}</Text>
+                }
               </View>
 
               {/* Reward */}
               <View style={styles.milestoneInfo}>
-                <Text style={styles.milestoneIcon}>{getRewardIcon(reward)}</Text>
+                <View style={styles.milestoneIcon}><RewardIcon reward={reward} /></View>
                 <View style={styles.milestoneTextCol}>
                   <Text style={[
                     styles.milestoneReward,
@@ -394,7 +404,7 @@ export default function EchoPassScreen({ navigation }: any) {
               {/* Action */}
               <View style={styles.milestoneAction}>
                 {isClaimed ? (
-                  <Text style={styles.statusClaimed}>✓</Text>
+                  <Check size={16} color={COLORS.neonGreen} />
                 ) : canClaim ? (
                   <TouchableOpacity
                     style={styles.claimBtn}
@@ -407,7 +417,7 @@ export default function EchoPassScreen({ navigation }: any) {
                     }
                   </TouchableOpacity>
                 ) : needsPass ? (
-                  <Text style={styles.statusNeedsPass}>🔒</Text>
+                  <Lock size={16} color={COLORS.textMuted} />
                 ) : (
                   <Text style={styles.statusLocked}>—</Text>
                 )}
@@ -493,7 +503,7 @@ const styles = StyleSheet.create({
   milestoneNumText: { fontSize: 11, fontWeight: '900', color: COLORS.textMuted },
 
   milestoneInfo:    { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  milestoneIcon:    { fontSize: 18 },
+  milestoneIcon:    { width: 18, alignItems: 'center', justifyContent: 'center' },
   milestoneTextCol: { flex: 1 },
   milestoneReward:  { fontSize: 12, fontWeight: '700', color: COLORS.textPrimary },
   milestoneMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
@@ -517,7 +527,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10, paddingVertical: 6, minWidth: 50, alignItems: 'center',
   },
   claimBtnText:    { fontSize: 10, fontWeight: '900', color: COLORS.bg, letterSpacing: 1 },
-  statusClaimed:   { fontSize: 16, color: COLORS.neonGreen, fontWeight: '900' },
-  statusNeedsPass: { fontSize: 16 },
   statusLocked:    { fontSize: 14, color: COLORS.textMuted },
 })

@@ -26,7 +26,7 @@ const { width, height } = Dimensions.get('window')
 
 export default function DungeonScreen({ navigation }: any) {
   const { playerState } = useGameStore()
-  const { fetchPlayerState, dungeonBattle } = useGame()
+  const { fetchPlayerState, dungeonBattle, buyDungeonAttempt } = useGame()
   const [userId, setUserId] = useState<string | null>(null)
   const [battling, setBattling] = useState(false)
   const [lastResult, setLastResult] = useState<DungeonBattleResult | null>(null)
@@ -105,20 +105,75 @@ export default function DungeonScreen({ navigation }: any) {
     }, 1200)
   }
 
+  const handleBuyAttempt = async (type: 'ad' | 'rc') => {
+    if (!userId) return
+
+    // Reklam senaryosu: SDK kurulumuna kadar simulasyon
+    if (type === 'ad') {
+      // TODO: AdMob entegrasyonu (Görev 13)
+      ThemedAlert.alert('📺 Loading Ad...', 'Ad will play here when AdMob is integrated.', [
+        { text: 'Skip (Dev)', onPress: () => processBuyAttempt('ad') },
+      ])
+      return
+    }
+
+    // RC senaryosu: doğrudan onay
+    processBuyAttempt('rc')
+  }
+
+  const processBuyAttempt = async (type: 'ad' | 'rc') => {
+    if (!userId) return
+    const result = await buyDungeonAttempt(userId, type)
+
+    if (!result) {
+      ThemedAlert.alert('Error', 'Failed to buy attempt. Try again.')
+      return
+    }
+
+    if (!result.success) {
+      const errorMessages: Record<string, string> = {
+        AD_ATTEMPTS_EXHAUSTED: `You've used all ${result.max ?? 3} ad attempts today.`,
+        RC_ATTEMPTS_EXHAUSTED: `You've used all ${result.max ?? 3} RC attempts today.`,
+        INSUFFICIENT_RC: `Need ${result.required} RC. Balance: ${result.balance}.`,
+      }
+      ThemedAlert.alert('Cannot Buy Attempt', errorMessages[result.error ?? ''] ?? result.error ?? 'Unknown error')
+      return
+    }
+
+    // Başarılı — state'i güncelle
+    await fetchPlayerState(userId)
+
+    if (type === 'ad') {
+      ThemedAlert.alert('✅ Attempt Added', `Free attempt unlocked!\n${(result.extra_attempts_ad ?? 0)}/${result.max_extra_ad ?? 3} ad attempts used.`)
+    } else {
+      ThemedAlert.alert('✅ Attempt Added', `Spent ${result.rc_cost} RC.\n${result.extra_attempts_rc ?? 0}/${result.max_extra_rc ?? 3} RC attempts used.`)
+    }
+  }
+
   const handleBattle = async () => {
     if (!userId || !playerState) return
 
     const { dungeon } = playerState
 
     if (dungeon.attempts_today >= dungeon.max_attempts) {
+      const adRemaining = (dungeon.max_extra_ad ?? 3) - (dungeon.extra_attempts_ad ?? 0)
+      const rcRemaining = (dungeon.max_extra_rc ?? 3) - (dungeon.extra_attempts_rc ?? 0)
+      const rcCost = Math.max(5, Math.min(50, Math.floor(dungeon.current_floor / 10) + 5))
+
       ThemedAlert.alert(
-        'No Attempts Left',
-        `Daily attempts exhausted.\nResets at UTC 00:00\n\nBuy +1 attempt for 150 RC?`,
+        '⚔️ Out of Attempts',
+        `Daily attempts exhausted.\nResets at UTC 00:00\n\n` +
+        `📺 Watch Ad: ${adRemaining}/3 left\n` +
+        `💎 Use RC: ${rcRemaining}/3 left (${rcCost} RC each)`,
         [
           { text: 'Cancel', style: 'cancel' },
           {
-            text: 'Buy Attempt (150 RC)',
-            onPress: () => ThemedAlert.alert('Coming Soon', 'RC purchase coming soon!'),
+            text: `📺 Watch Ad (${adRemaining} left)`,
+            onPress: () => handleBuyAttempt('ad'),
+          },
+          {
+            text: `💎 ${rcCost} RC (${rcRemaining} left)`,
+            onPress: () => handleBuyAttempt('rc'),
           },
         ]
       )

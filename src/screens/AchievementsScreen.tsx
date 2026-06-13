@@ -11,18 +11,22 @@ import { useFocusEffect } from '@react-navigation/native'
 import { supabase } from '../lib/supabase'
 import { COLORS } from '../constants'
 import { ThemedAlert } from '../components/ThemedAlert'
+import { ArrowLeft, Trophy, Sword, Building, Radio, Star, Shield, Gem, CircleDollarSign, ScrollText, Gift, CheckCircle } from 'lucide-react-native'
 
 const { width } = Dimensions.get('window')
 
 type Category = 'all' | 'dungeon' | 'arena' | 'quest' | 'general' | 'guild'
 
-const CATEGORY_ICONS: Record<string, string> = {
-  all:     '🏆',
-  dungeon: '⚔️',
-  arena:   '🏟️',
-  quest:   '📡',
-  general: '⭐',
-  guild:   '🛡️',
+function CategoryIcon({ category, size = 14 }: { category: string; size?: number }) {
+  switch (category) {
+    case 'all':     return <Trophy size={size} color={COLORS.gold} />
+    case 'dungeon': return <Sword size={size} color={COLORS.textSecondary} />
+    case 'arena':   return <Building size={size} color={COLORS.textSecondary} />
+    case 'quest':   return <Radio size={size} color={COLORS.textSecondary} />
+    case 'general': return <Star size={size} color={COLORS.gold} />
+    case 'guild':   return <Shield size={size} color={COLORS.textSecondary} />
+    default:        return <Trophy size={size} color={COLORS.gold} />
+  }
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -75,10 +79,10 @@ export default function AchievementsScreen({ navigation }: any) {
     setClaiming(null)
     if (data?.success) {
       const lines = []
-      if (data.rc_reward > 0)     lines.push(`+${data.rc_reward} 💎 RC`)
-      if (data.gold_reward > 0)   lines.push(`+${data.gold_reward.toLocaleString()} 🪙 Gold`)
-      if (data.scroll_reward > 0) lines.push(`+${data.scroll_reward} 📜 Echo Sigil${data.scroll_reward > 1 ? 's' : ''}`)
-      ThemedAlert.alert('🎉 Reward Claimed!', lines.join('\n'))
+      if (data.rc_reward > 0)     lines.push(`+${data.rc_reward} RC`)
+      if (data.gold_reward > 0)   lines.push(`+${data.gold_reward.toLocaleString()} Gold`)
+      if (data.scroll_reward > 0) lines.push(`+${data.scroll_reward} Echo Sigil${data.scroll_reward > 1 ? 's' : ''}`)
+      ThemedAlert.alert('Reward Claimed!', lines.join('\n'))
       await loadData()
     } else {
       ThemedAlert.alert('Error', data?.error || 'Failed to claim')
@@ -145,13 +149,14 @@ export default function AchievementsScreen({ navigation }: any) {
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backBtn}>← BACK</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <ArrowLeft size={14} color={COLORS.textSecondary} />
+          <Text style={styles.backBtn}> BACK</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>ACHIEVEMENTS</Text>
         <View style={{ alignItems: 'flex-end' }}>
           <Text style={styles.headerCount}>{completedCount}/{totalCount}</Text>
-          <Text style={styles.showcaseCount}>⭐ {showcaseIds.length}/3 showcased</Text>
+          <Text style={styles.showcaseCount}><Star size={9} color="#FFD700" fill="#FFD700" /> {showcaseIds.length}/3 showcased</Text>
         </View>
       </View>
 
@@ -175,7 +180,7 @@ export default function AchievementsScreen({ navigation }: any) {
             style={[styles.tab, category === cat && styles.tabActive]}
             onPress={() => setCategory(cat)}
           >
-            <Text style={styles.tabIcon}>{CATEGORY_ICONS[cat]}</Text>
+            <CategoryIcon category={cat} />
             {category === cat && (
               <Text style={styles.tabLabel}>{CATEGORY_LABELS[cat]}</Text>
             )}
@@ -211,11 +216,14 @@ export default function AchievementsScreen({ navigation }: any) {
                     ? item.reward_granted ? COLORS.bgPanel : COLORS.neonGreen + '20'
                     : COLORS.bgPanel
                 }]}>
-                  <Text style={styles.statusEmoji}>
-                    {item.completed
-                      ? item.reward_granted ? '✅' : '🎁'
-                      : item.icon || CATEGORY_ICONS[item.category] || '🏆'}
-                  </Text>
+                  {item.completed
+                    ? item.reward_granted
+                      ? <CheckCircle size={24} color={COLORS.neonGreen} />
+                      : <Gift size={24} color={COLORS.gold} />
+                    : item.icon
+                      ? <Text style={styles.statusEmoji}>{item.icon}</Text>
+                      : <CategoryIcon category={item.category} size={24} />
+                  }
                 </View>
 
                 {/* Info */}
@@ -240,13 +248,22 @@ export default function AchievementsScreen({ navigation }: any) {
                   {/* Rewards */}
                   <View style={styles.rewardsRow}>
                     {item.rc_reward > 0 && (
-                      <Text style={styles.rewardTag}>💎 {item.rc_reward} RC</Text>
+                      <View style={styles.rewardTag}>
+                        <Gem size={10} color={COLORS.gold} />
+                        <Text style={styles.rewardTagText}> {item.rc_reward} RC</Text>
+                      </View>
                     )}
                     {item.gold_reward > 0 && (
-                      <Text style={styles.rewardTag}>🪙 {item.gold_reward.toLocaleString()}</Text>
+                      <View style={styles.rewardTag}>
+                        <CircleDollarSign size={10} color={COLORS.gold} />
+                        <Text style={styles.rewardTagText}> {item.gold_reward.toLocaleString()}</Text>
+                      </View>
                     )}
                     {item.scroll_reward > 0 && (
-                      <Text style={[styles.rewardTag, { color: '#A855F7' }]}>📜 {item.scroll_reward}</Text>
+                      <View style={styles.rewardTag}>
+                        <ScrollText size={10} color="#A855F7" />
+                        <Text style={[styles.rewardTagText, { color: '#A855F7' }]}> {item.scroll_reward}</Text>
+                      </View>
                     )}
                   </View>
                 </View>
@@ -279,12 +296,15 @@ export default function AchievementsScreen({ navigation }: any) {
                     onPress={() => handleToggleShowcase(item)}
                     disabled={savingShowcase}
                   >
-                    <Text style={[
-                      styles.showcaseBtnText,
-                      showcaseIds.includes(item.id) && styles.showcaseBtnTextActive,
-                    ]}>
-                      {showcaseIds.includes(item.id) ? '⭐ SHOWCASED' : '☆ SHOWCASE'}
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Star size={12} color={showcaseIds.includes(item.id) ? '#FFD700' : 'rgba(255,215,0,0.5)'} fill={showcaseIds.includes(item.id) ? '#FFD700' : 'transparent'} />
+                      <Text style={[
+                        styles.showcaseBtnText,
+                        showcaseIds.includes(item.id) && styles.showcaseBtnTextActive,
+                      ]}>
+                        {showcaseIds.includes(item.id) ? 'SHOWCASED' : 'SHOWCASE'}
+                      </Text>
+                    </View>
                   </TouchableOpacity>
                 )}
               </View>
