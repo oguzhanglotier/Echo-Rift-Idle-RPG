@@ -1,0 +1,642 @@
+{
+  "App.tsx": {
+    "mtime": 1781355972.7111912,
+    "ast_hash": "71ba1a252e48bb215bde61e6466af95a",
+    "semantic_hash": ""
+  },
+  "app.config.js": {
+    "mtime": 1781355972.7111912,
+    "ast_hash": "c28ba584ddb800e7325d1efeab97f5ae",
+    "semantic_hash": ""
+  },
+  "assets/characters/phantom/dead/spritesheet.json": {
+    "mtime": 1781355972.7195785,
+    "ast_hash": "88e409a65d6db29bd77011732258d5f1",
+    "semantic_hash": ""
+  },
+  "assets/characters/phantom/idle/spritesheet.json": {
+    "mtime": 1781355972.7311046,
+    "ast_hash": "e87f0101224c039860ce110af170f181",
+    "semantic_hash": ""
+  },
+  "assets/characters/phantom/punch/spritesheet.json": {
+    "mtime": 1781355972.7412417,
+    "ast_hash": "7b51dd4dc3d72bb45b65a628b501e9fc",
+    "semantic_hash": ""
+  },
+  "assets/characters/riftmage/dead/spritesheet.json": {
+    "mtime": 1781355972.7538254,
+    "ast_hash": "eef5f8d184c6b22bd6fc9a37da38ccae",
+    "semantic_hash": ""
+  },
+  "assets/characters/riftmage/idle/spritesheet.json": {
+    "mtime": 1781355972.76589,
+    "ast_hash": "88e409a65d6db29bd77011732258d5f1",
+    "semantic_hash": ""
+  },
+  "assets/characters/riftmage/punch/spritesheet.json": {
+    "mtime": 1781355972.779528,
+    "ast_hash": "3d9165265bc86857483c028cc1871c1a",
+    "semantic_hash": ""
+  },
+  "assets/characters/vanguard/dead/spritesheet.json": {
+    "mtime": 1781355972.7941096,
+    "ast_hash": "da7bdd321c7396fac4a739e0144f36cd",
+    "semantic_hash": ""
+  },
+  "assets/characters/vanguard/idle/spritesheet.json": {
+    "mtime": 1781355972.8077145,
+    "ast_hash": "a77e05111cb7a449745ffe510f432ce1",
+    "semantic_hash": ""
+  },
+  "assets/characters/vanguard/punch/spritesheet.json": {
+    "mtime": 1781355972.8284752,
+    "ast_hash": "a4294805c3c56510365e6db891655bd5",
+    "semantic_hash": ""
+  },
+  "babel.config.js": {
+    "mtime": 1781355972.9193265,
+    "ast_hash": "077fa9c1d263be72512306a72949a259",
+    "semantic_hash": ""
+  },
+  "index.ts": {
+    "mtime": 1781355972.9193265,
+    "ast_hash": "5e5a78a8d7842cc213008457cd0d5260",
+    "semantic_hash": ""
+  },
+  "metro.config.js": {
+    "mtime": 1781355972.9193265,
+    "ast_hash": "00f8548fd299030cdf732b8cb4591188",
+    "semantic_hash": ""
+  },
+  "package.json": {
+    "mtime": 1781355972.9213598,
+    "ast_hash": "81f251477cc08f5ae63cd1bdefe8ec8d",
+    "semantic_hash": ""
+  },
+  "src/components/AfkRewardModal.tsx": {
+    "mtime": 1781355972.9234097,
+    "ast_hash": "c583c295bbb31ac9616f0312f37d26f5",
+    "semantic_hash": ""
+  },
+  "src/components/ArenaBattleModal.tsx": {
+    "mtime": 1781355972.9234097,
+    "ast_hash": "9d3833afcb1a99bc844ef2227ebe610d",
+    "semantic_hash": ""
+  },
+  "src/components/BuffDebuffIcons.tsx": {
+    "mtime": 1781355972.9247682,
+    "ast_hash": "9cc239989be5bbf787261475f7fe0fd2",
+    "semantic_hash": ""
+  },
+  "src/components/ChampionSkillOverlay.tsx": {
+    "mtime": 1781355972.9247682,
+    "ast_hash": "40498c384d6d9e1ff16c1d171504de1c",
+    "semantic_hash": ""
+  },
+  "src/components/ChampionSkillPreviewModal.tsx": {
+    "mtime": 1781355972.9247682,
+    "ast_hash": "eee0eb5bd6c3b2c9cfbb88092edfd765",
+    "semantic_hash": ""
+  },
+  "src/components/DailyLoginModal.tsx": {
+    "mtime": 1781355972.9257746,
+    "ast_hash": "775f5f9254b34fbfe68e23b165c2d993",
+    "semantic_hash": ""
+  },
+  "src/components/ErrorBoundary.tsx": {
+    "mtime": 1781355972.9257746,
+    "ast_hash": "db14c95dc3693ec57390dd740c218c71",
+    "semantic_hash": ""
+  },
+  "src/components/HitFx.tsx": {
+    "mtime": 1781355972.9257746,
+    "ast_hash": "00ec0f729b4db5aeb34a4c9799a96980",
+    "semantic_hash": ""
+  },
+  "src/components/LevelUpModal.tsx": {
+    "mtime": 1781355972.9257746,
+    "ast_hash": "ca51882d13b2fbd9cfd5884091761e43",
+    "semantic_hash": ""
+  },
+  "src/components/PlayerActionMenu.tsx": {
+    "mtime": 1781355972.9267735,
+    "ast_hash": "b71106b3ac27f0d36b02e16289c56f37",
+    "semantic_hash": ""
+  },
+  "src/components/QuestBottomSheet.tsx": {
+    "mtime": 1781355972.9267735,
+    "ast_hash": "6b59ba0f6531186f76af50f01ae5e25a",
+    "semantic_hash": ""
+  },
+  "src/components/QuestRewardModal.tsx": {
+    "mtime": 1781355972.9267735,
+    "ast_hash": "d041fe4c4252af95de8b2b8a0458c767",
+    "semantic_hash": ""
+  },
+  "src/components/RarityAura.tsx": {
+    "mtime": 1781355972.9267735,
+    "ast_hash": "01225f02355a4f7d6c0033a4ee4eeecb",
+    "semantic_hash": ""
+  },
+  "src/components/RebirthModal.tsx": {
+    "mtime": 1781355972.927773,
+    "ast_hash": "14267ee4bba609dd6f18f18091bd491c",
+    "semantic_hash": ""
+  },
+  "src/components/ReportModal.tsx": {
+    "mtime": 1781355972.927773,
+    "ast_hash": "37bf9cc1667e5f8fe38ef47a84df0492",
+    "semantic_hash": ""
+  },
+  "src/components/SpriteCharacter.tsx": {
+    "mtime": 1781355972.927773,
+    "ast_hash": "521fad90c33b9b1ad7e8325fa4fb5ba8",
+    "semantic_hash": ""
+  },
+  "src/components/ThemedAlert.tsx": {
+    "mtime": 1781355972.927773,
+    "ast_hash": "3c6dfd859f17112314a1e0aaa79bc5e0",
+    "semantic_hash": ""
+  },
+  "src/components/TierBadge.tsx": {
+    "mtime": 1781355972.927773,
+    "ast_hash": "29bab7c6c739fc049ed6d61f0aa4e791",
+    "semantic_hash": ""
+  },
+  "src/constants/championPortraits.ts": {
+    "mtime": 1781355972.9287727,
+    "ast_hash": "0c032ad44aac671469c1ced8ae3651ce",
+    "semantic_hash": ""
+  },
+  "src/constants/index.ts": {
+    "mtime": 1781355972.9287727,
+    "ast_hash": "031fad53fc47cb19c6c58a178e8b5ce8",
+    "semantic_hash": ""
+  },
+  "src/constants/itemImages.ts": {
+    "mtime": 1781355972.9297743,
+    "ast_hash": "633f087738287679b9fafa801e09f9c0",
+    "semantic_hash": ""
+  },
+  "src/hooks/useGame.ts": {
+    "mtime": 1781355972.9297743,
+    "ast_hash": "f3c9f367693c0644dee2de8c15ebe8ab",
+    "semantic_hash": ""
+  },
+  "src/lib/NetworkMonitor.tsx": {
+    "mtime": 1781355972.9297743,
+    "ast_hash": "a1ccf70838c91ede8f3d00051ab20a2c",
+    "semantic_hash": ""
+  },
+  "src/lib/notifications.ts": {
+    "mtime": 1781355972.9307747,
+    "ast_hash": "dd18baadfe7b6fc5d5861c2c2a14b15f",
+    "semantic_hash": ""
+  },
+  "src/lib/supabase.ts": {
+    "mtime": 1781355972.9307747,
+    "ast_hash": "9ef239a69c2300c0cca3d5e8002b8f7e",
+    "semantic_hash": ""
+  },
+  "src/navigation/AppNavigator.tsx": {
+    "mtime": 1781355972.9307747,
+    "ast_hash": "22a692075eabc8a9ad4af2eb94e5a253",
+    "semantic_hash": ""
+  },
+  "src/screens/AchievementsScreen.tsx": {
+    "mtime": 1781355972.9319572,
+    "ast_hash": "2af5b78e6a99cedf809b7fd16cc0a7ed",
+    "semantic_hash": ""
+  },
+  "src/screens/ArenaScreen.tsx": {
+    "mtime": 1781355972.9319572,
+    "ast_hash": "4c23703f0b2e91fd83081a04ba395935",
+    "semantic_hash": ""
+  },
+  "src/screens/ChampionCollectionScreen.tsx": {
+    "mtime": 1781355972.9329574,
+    "ast_hash": "e4394d6d3cb9e7ece045e8b4a11bfa61",
+    "semantic_hash": ""
+  },
+  "src/screens/ClassSelectScreen.tsx": {
+    "mtime": 1781355972.9329574,
+    "ast_hash": "9497eaa94f5b27dcdf6d9bc9d872fdc8",
+    "semantic_hash": ""
+  },
+  "src/screens/DailyMissionsScreen.tsx": {
+    "mtime": 1781355972.9334614,
+    "ast_hash": "2572483923c94eb3fb968c620c84dbac",
+    "semantic_hash": ""
+  },
+  "src/screens/DungeonScreen.tsx": {
+    "mtime": 1781355972.9334614,
+    "ast_hash": "755f9c4f043d422ae04ec5f3ee0ba319",
+    "semantic_hash": ""
+  },
+  "src/screens/EchoPassScreen.tsx": {
+    "mtime": 1781355972.9334614,
+    "ast_hash": "28baf253d917ea6c77b31f02f28412f5",
+    "semantic_hash": ""
+  },
+  "src/screens/FriendsScreen.tsx": {
+    "mtime": 1781355972.9344666,
+    "ast_hash": "ba5e5c76852d78b43375925886ed1a66",
+    "semantic_hash": ""
+  },
+  "src/screens/GlobalChatScreen.tsx": {
+    "mtime": 1781355972.9344666,
+    "ast_hash": "ef04ec0d83005bdbe65096dcd3402e40",
+    "semantic_hash": ""
+  },
+  "src/screens/GuildScreen.tsx": {
+    "mtime": 1781355972.9349706,
+    "ast_hash": "cfc8268481b8762a7426497f97eee895",
+    "semantic_hash": ""
+  },
+  "src/screens/InventoryScreen.tsx": {
+    "mtime": 1781355972.9349706,
+    "ast_hash": "02ba68b92d05354e1124e6eab5b57610",
+    "semantic_hash": ""
+  },
+  "src/screens/LeaderboardScreen.tsx": {
+    "mtime": 1781355972.9359756,
+    "ast_hash": "8f051297b1661199b794a80f7c737d72",
+    "semantic_hash": ""
+  },
+  "src/screens/LoginScreen.tsx": {
+    "mtime": 1781355972.9359756,
+    "ast_hash": "66674c38730e5304d9ab7f68df31544a",
+    "semantic_hash": ""
+  },
+  "src/screens/MailboxScreen.tsx": {
+    "mtime": 1781355972.9359756,
+    "ast_hash": "545248cd6d6dbd944881b97f2734c170",
+    "semantic_hash": ""
+  },
+  "src/screens/NotificationsScreen.tsx": {
+    "mtime": 1781355972.9359756,
+    "ast_hash": "7f1f246c9c60eececfc0408126c3b3bc",
+    "semantic_hash": ""
+  },
+  "src/screens/PlayerProfileScreen.tsx": {
+    "mtime": 1781355972.9374819,
+    "ast_hash": "35d254b43cecf8f9045dfeea69415716",
+    "semantic_hash": ""
+  },
+  "src/screens/ProfileScreen.tsx": {
+    "mtime": 1781355972.9374819,
+    "ast_hash": "7135769c6c9c7444a448d59b5a209ec1",
+    "semantic_hash": ""
+  },
+  "src/screens/QuestScreen.tsx": {
+    "mtime": 1781355972.9374819,
+    "ast_hash": "c6586c137b844404d603f9e5b3be51d1",
+    "semantic_hash": ""
+  },
+  "src/screens/ReferralScreen.tsx": {
+    "mtime": 1781355972.938488,
+    "ast_hash": "ae06680e9e41a9ee170065eee233ba19",
+    "semantic_hash": ""
+  },
+  "src/screens/SettingsScreen.tsx": {
+    "mtime": 1781355972.938488,
+    "ast_hash": "65e9c65cbb102620e3c8ab198dbc5c92",
+    "semantic_hash": ""
+  },
+  "src/screens/ShipScreen.tsx": {
+    "mtime": 1781355972.938488,
+    "ast_hash": "e072d1e43b7381034c81817cf8444552",
+    "semantic_hash": ""
+  },
+  "src/screens/ShopScreen.tsx": {
+    "mtime": 1781355972.9394875,
+    "ast_hash": "89345abec3b24bb0063729626e02241e",
+    "semantic_hash": ""
+  },
+  "src/screens/SplashScreen.tsx": {
+    "mtime": 1781355972.9394875,
+    "ast_hash": "7c88c96ff0cb6744ee7db4cae7d57e95",
+    "semantic_hash": ""
+  },
+  "src/screens/SummonScreen.tsx": {
+    "mtime": 1781355972.9394875,
+    "ast_hash": "707624a3e4a5e5de2992e1f5d6eea72c",
+    "semantic_hash": ""
+  },
+  "src/screens/WorldMapScreen.tsx": {
+    "mtime": 1781355972.9394875,
+    "ast_hash": "34a9b94fa60788cd036bfe0847391c56",
+    "semantic_hash": ""
+  },
+  "src/store/gameStore.ts": {
+    "mtime": 1781355972.9394875,
+    "ast_hash": "7540f6d4aa428bdd577a83e1b1566873",
+    "semantic_hash": ""
+  },
+  "src/types/index.ts": {
+    "mtime": 1781355972.9409916,
+    "ast_hash": "38a4c2aff13da9266e444a8df7de6a5a",
+    "semantic_hash": ""
+  },
+  "tsconfig.json": {
+    "mtime": 1781355972.9409916,
+    "ast_hash": "2f567448d4f0c0f9fcec96fb1c4ea748",
+    "semantic_hash": ""
+  },
+  "CLAUDE.md": {
+    "mtime": 1781355972.7111912,
+    "ast_hash": "1da7c4e38cdc9bda8aa60b23a5afb92d",
+    "semantic_hash": ""
+  },
+  "assets/vfx_1.html": {
+    "mtime": 1781355972.9193265,
+    "ast_hash": "4955dfc7f3f4c1e5ba412a145321dc59",
+    "semantic_hash": ""
+  },
+  "src/screens/PATCH_INSTRUCTIONS_C1_C2.md": {
+    "mtime": 1781355972.9359756,
+    "ast_hash": "35b2a17b895bb075fea3c2e4f664f890",
+    "semantic_hash": ""
+  },
+  "assets/ChatGPT Image 25 Nis 2026 17_55_02.png": {
+    "mtime": 1781355972.7185628,
+    "ast_hash": "ad8ff333666275d4974fc2a95d0d2bba",
+    "semantic_hash": ""
+  },
+  "assets/adaptive-icon.png": {
+    "mtime": 1781355972.7185628,
+    "ast_hash": "97dae5a0e62ad8551d8a31897b425e63",
+    "semantic_hash": ""
+  },
+  "assets/characters/phantom/dead/spritesheet.png": {
+    "mtime": 1781355972.730602,
+    "ast_hash": "8b5703894035a09da8e8166c6c18794f",
+    "semantic_hash": ""
+  },
+  "assets/characters/phantom/idle/spritesheet.png": {
+    "mtime": 1781355972.740678,
+    "ast_hash": "392feeacbc4fdb741942ee153d3a9d7a",
+    "semantic_hash": ""
+  },
+  "assets/characters/phantom/punch/spritesheet.png": {
+    "mtime": 1781355972.7538254,
+    "ast_hash": "e9c58c331e1695072bcb734aa2392db8",
+    "semantic_hash": ""
+  },
+  "assets/characters/riftmage/dead/spritesheet.png": {
+    "mtime": 1781355972.76589,
+    "ast_hash": "1a5939138eeab969b6145e044e09bfc7",
+    "semantic_hash": ""
+  },
+  "assets/characters/riftmage/idle/spritesheet.png": {
+    "mtime": 1781355972.779528,
+    "ast_hash": "e1570ea31a753b080fff69c67721a9bd",
+    "semantic_hash": ""
+  },
+  "assets/characters/riftmage/punch/spritesheet.png": {
+    "mtime": 1781355972.7941096,
+    "ast_hash": "710a3b9cf98421092b686c6fe7b088e7",
+    "semantic_hash": ""
+  },
+  "assets/characters/vanguard/dead/spritesheet.png": {
+    "mtime": 1781355972.8067384,
+    "ast_hash": "d8333f5470c053ee83cd15d7b0768ec2",
+    "semantic_hash": ""
+  },
+  "assets/characters/vanguard/idle/spritesheet.png": {
+    "mtime": 1781355972.8274748,
+    "ast_hash": "03f722c0d4dd678fbed230379c2db963",
+    "semantic_hash": ""
+  },
+  "assets/characters/vanguard/punch/spritesheet.png": {
+    "mtime": 1781355972.8450398,
+    "ast_hash": "6a9bd4f7d6e80dcce6e54ba91645a67a",
+    "semantic_hash": ""
+  },
+  "assets/favicon.png": {
+    "mtime": 1781355972.8460412,
+    "ast_hash": "4f1cb2cac2370cd5050681232e8575a8",
+    "semantic_hash": ""
+  },
+  "assets/gemini-2.5-flash-image_game_art_back_ground_picture_with_this_character-0.jpg": {
+    "mtime": 1781355972.8470411,
+    "ast_hash": "294a95fda53fc2cd01131d9437cdea9a",
+    "semantic_hash": ""
+  },
+  "assets/gemini-2.5-flash-image_keep_only_character_and_delete_other_thins_and_make_better_back_ground-0.jpg": {
+    "mtime": 1781355972.8480394,
+    "ast_hash": "41f45c20f0ea238464205f970de37d6a",
+    "semantic_hash": ""
+  },
+  "assets/icon.png": {
+    "mtime": 1781355972.8490393,
+    "ast_hash": "4e3f888fc8475f69fd5fa32f1ad5216a",
+    "semantic_hash": ""
+  },
+  "assets/images/ImageBackground.jpg": {
+    "mtime": 1781355972.8500397,
+    "ast_hash": "ee3ff1766b5cb0264200850c0fc18a27",
+    "semantic_hash": ""
+  },
+  "assets/images/Worldmap.jpg": {
+    "mtime": 1781355972.8535507,
+    "ast_hash": "0f29f2d873b3a421414d5f03799ad7f2",
+    "semantic_hash": ""
+  },
+  "assets/images/arena_bg.jpg": {
+    "mtime": 1781355972.8558812,
+    "ast_hash": "2d68f0a663410fcc191488578d43718a",
+    "semantic_hash": ""
+  },
+  "assets/images/dungeon.jpg": {
+    "mtime": 1781355972.8589966,
+    "ast_hash": "ba45f9a61b2fca7e013200f7c30efa2a",
+    "semantic_hash": ""
+  },
+  "assets/images/guild.jpg": {
+    "mtime": 1781355972.86253,
+    "ast_hash": "1b855d4a4fd4e2ee4df59bdd047fd60d",
+    "semantic_hash": ""
+  },
+  "assets/images/phantom.png": {
+    "mtime": 1781355972.86253,
+    "ast_hash": "39f31dde23ea34445bf3800e1455f211",
+    "semantic_hash": ""
+  },
+  "assets/images/profile.jpg": {
+    "mtime": 1781355972.8652854,
+    "ast_hash": "5c27a586f26b4dd38829f377576ce398",
+    "semantic_hash": ""
+  },
+  "assets/images/riftmage.png": {
+    "mtime": 1781355972.8661728,
+    "ast_hash": "bb1643b8d9219019b22bd870141e9f5b",
+    "semantic_hash": ""
+  },
+  "assets/images/ship.jpg": {
+    "mtime": 1781355972.8676827,
+    "ast_hash": "789fa52bdcf3454103b656bffb388dda",
+    "semantic_hash": ""
+  },
+  "assets/images/vanguard.png": {
+    "mtime": 1781355972.8681877,
+    "ast_hash": "6d7a3f76a7b8f9f8fef07aadb896d749",
+    "semantic_hash": ""
+  },
+  "assets/items/phantom/chest.png": {
+    "mtime": 1781355972.8703127,
+    "ast_hash": "a8704c8b4380f51d194cc94f2349a353",
+    "semantic_hash": ""
+  },
+  "assets/items/phantom/crystal.png": {
+    "mtime": 1781355972.8718963,
+    "ast_hash": "7eb8fb8579adfbe53dd3afdff195aad6",
+    "semantic_hash": ""
+  },
+  "assets/items/phantom/gloves.png": {
+    "mtime": 1781355972.8729367,
+    "ast_hash": "f17d387972f1bc5eaf38d643b1a69b87",
+    "semantic_hash": ""
+  },
+  "assets/items/phantom/helmet.png": {
+    "mtime": 1781355972.8738225,
+    "ast_hash": "627f169a530c3b3f2714b1f1bf639925",
+    "semantic_hash": ""
+  },
+  "assets/items/phantom/necklace.png": {
+    "mtime": 1781355972.8748226,
+    "ast_hash": "5cfaa0adc01d1fe74ce530c673032fca",
+    "semantic_hash": ""
+  },
+  "assets/items/riftmage/chest.png": {
+    "mtime": 1781355972.876868,
+    "ast_hash": "94901db50900477c07141da5b5b4929a",
+    "semantic_hash": ""
+  },
+  "assets/items/riftmage/crystal.png": {
+    "mtime": 1781355972.876868,
+    "ast_hash": "99fbb6f96dd7b0f6aaa66f314ac7f191",
+    "semantic_hash": ""
+  },
+  "assets/items/riftmage/gloves.png": {
+    "mtime": 1781355972.8789024,
+    "ast_hash": "7e407f54bd713ec3128692f3039d6d02",
+    "semantic_hash": ""
+  },
+  "assets/items/riftmage/helmet.png": {
+    "mtime": 1781355972.8799443,
+    "ast_hash": "bac452035e6e8f47e8dc936a5f12d269",
+    "semantic_hash": ""
+  },
+  "assets/items/riftmage/necklace.png": {
+    "mtime": 1781355972.8813255,
+    "ast_hash": "4d02779dd3bf2b7bdadf76031230ff4a",
+    "semantic_hash": ""
+  },
+  "assets/items/vanguard/chest.png": {
+    "mtime": 1781355972.882331,
+    "ast_hash": "55d36b58e3b52fa0a44c2adc689db573",
+    "semantic_hash": ""
+  },
+  "assets/items/vanguard/crystal.png": {
+    "mtime": 1781355972.8834593,
+    "ast_hash": "40a5f56784b39313d03968a20f7d6216",
+    "semantic_hash": ""
+  },
+  "assets/items/vanguard/gloves.png": {
+    "mtime": 1781355972.884397,
+    "ast_hash": "ae9905d9dbb3f6b4ec103b4531970d31",
+    "semantic_hash": ""
+  },
+  "assets/items/vanguard/helmet.png": {
+    "mtime": 1781355972.8853774,
+    "ast_hash": "9995fbb5f9027c33a2f56d2c12d2775d",
+    "semantic_hash": ""
+  },
+  "assets/items/vanguard/necklace.png": {
+    "mtime": 1781355972.8873298,
+    "ast_hash": "a07194221aa1976f8dfcb26b982584d3",
+    "semantic_hash": ""
+  },
+  "assets/phantom.png": {
+    "mtime": 1781355972.8873298,
+    "ast_hash": "39f31dde23ea34445bf3800e1455f211",
+    "semantic_hash": ""
+  },
+  "assets/riftmage.png": {
+    "mtime": 1781355972.888332,
+    "ast_hash": "bb1643b8d9219019b22bd870141e9f5b",
+    "semantic_hash": ""
+  },
+  "assets/splash-icon.png": {
+    "mtime": 1781355972.888332,
+    "ast_hash": "97dae5a0e62ad8551d8a31897b425e63",
+    "semantic_hash": ""
+  },
+  "assets/swords/sword_common.png": {
+    "mtime": 1781355972.8919036,
+    "ast_hash": "9d515db4e1df18eea4391f815d8a8235",
+    "semantic_hash": ""
+  },
+  "assets/swords/sword_common_bg.png": {
+    "mtime": 1781355972.8934548,
+    "ast_hash": "18600b5b38843f1893f61ac95a982f08",
+    "semantic_hash": ""
+  },
+  "assets/swords/sword_dimensional.png": {
+    "mtime": 1781355972.896448,
+    "ast_hash": "9c5c127ba561eb30447032a86f41790c",
+    "semantic_hash": ""
+  },
+  "assets/swords/sword_dimensional_bg.png": {
+    "mtime": 1781355972.8979828,
+    "ast_hash": "1892084676f5749f71e26fe50afedf39",
+    "semantic_hash": ""
+  },
+  "assets/swords/sword_epic.png": {
+    "mtime": 1781355972.9022388,
+    "ast_hash": "1c0c3afe926f6eb81ed74f5b457f70d1",
+    "semantic_hash": ""
+  },
+  "assets/swords/sword_epic_bg.png": {
+    "mtime": 1781355972.9042425,
+    "ast_hash": "f3fa0850ccd1a32d4cff6980cd8ee009",
+    "semantic_hash": ""
+  },
+  "assets/swords/sword_legendary.png": {
+    "mtime": 1781355972.9072566,
+    "ast_hash": "8dd529fb7d8b0272f9e6648292aaadf4",
+    "semantic_hash": ""
+  },
+  "assets/swords/sword_legendary_bg.png": {
+    "mtime": 1781355972.908242,
+    "ast_hash": "bc543dc467c7e641f7b635edee9affc7",
+    "semantic_hash": ""
+  },
+  "assets/swords/sword_rare.png": {
+    "mtime": 1781355972.9112985,
+    "ast_hash": "14f0d45c39040dab2b25af5c7e58314a",
+    "semantic_hash": ""
+  },
+  "assets/swords/sword_rare_bg.png": {
+    "mtime": 1781355972.9133282,
+    "ast_hash": "744aa430f3de788f72a8fc5129a562ef",
+    "semantic_hash": ""
+  },
+  "assets/swords/sword_uncommon.png": {
+    "mtime": 1781355972.9153097,
+    "ast_hash": "e64ee7c394ada439546514b43141addd",
+    "semantic_hash": ""
+  },
+  "assets/swords/sword_uncommon_bg.png": {
+    "mtime": 1781355972.9173133,
+    "ast_hash": "0e3627751469b19e462fde4a776a9229",
+    "semantic_hash": ""
+  },
+  "assets/vanguard.png": {
+    "mtime": 1781355972.9183297,
+    "ast_hash": "6d7a3f76a7b8f9f8fef07aadb896d749",
+    "semantic_hash": ""
+  }
+}
